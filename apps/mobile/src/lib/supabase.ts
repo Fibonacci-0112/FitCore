@@ -19,7 +19,8 @@ export const supabase = createClient<Database>(url, anonKey, {
     storage: Platform.OS === "web" ? undefined : AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: Platform.OS === "web",
+    // Password auth needs no URL session; unsolicited links must not switch accounts.
+    detectSessionInUrl: false,
   },
 });
 
