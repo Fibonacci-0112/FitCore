@@ -51,7 +51,7 @@ This document gives the business view: who uses the product, what it does, and w
 ### 3.1 Sharing model
 
 - **Private by default.** No one but the member sees their data.
-- **Opt-in grants.** A member can invite a coach or clinician, or accept an invitation from one. A grant covers specific **scopes** (for example nutrition, training, body metrics, photos, wellness) and gives **read + edit** access within them: set targets, assign meal or workout plans, comment.
+- **Opt-in grants.** A member can invite a coach or clinician, or accept an invitation from one. A grant covers specific **scopes** (for example nutrition, training, body metrics, photos, wellness). Within a granted scope, the professional gets exactly the access the [permission matrix](#32-permission-matrix) lists for their role and nothing more. Professionals can always read granted data. They can write only targets and assigned plans, plus comments, messages and check-in responses. A member's own logs (diary, weight, measurements, photos, wellness) stay read-only to them.
 - **Revocable at any time.** Revoking access stops it immediately. Content the professional authored, such as comments and plans, stays in the member's history.
 - **Audited.** Granting, changing and revoking access is logged. So is every edit a professional makes to a member's data. The member can see that log.
 
@@ -121,7 +121,7 @@ The product owner prefers **.NET on every platform**. The full rationale and tra
 | Client platforms | iOS, Android, Windows, macOS and web, all .NET: **.NET MAUI Blazor Hybrid** apps and a **Blazor Web App**, sharing one Razor component library. Native XAML pages only where they clearly pay off: the active workout / rest timer and the camera / barcode scanner. |
 | Domain logic | One shared C# library: units, nutrition totals, estimated cost, targets and guardrails. It ports the rules and table tests from `packages/core`. |
 | Backend | **Supabase** for Postgres, Auth, Storage and row-level security, plus **ASP.NET Core** services for server logic: food search/import, AI calls, payment webhooks, notifications. |
-| Sign-in | Email/password, Google, Microsoft and **Sign in with Apple**. Apple's App Review rules require Apple sign-in when an iOS app offers other third-party social logins. |
+| Sign-in | Email/password, Google, Microsoft and **Sign in with Apple**. Apple App Review Guideline 4.8 requires an iOS app that offers third-party or social login to also offer an equivalent login option with defined privacy protections. Sign in with Apple is the option chosen to meet it. |
 | Stores | Apple App Store, Google Play, Microsoft Store (MSIX), and the web |
 | Existing code | The TypeScript/Expo/Electron R1 code becomes a reference implementation. The database schema, RLS policies, pgTAP tests and data contracts carry over. |
 
@@ -162,7 +162,7 @@ The product owner prefers **.NET on every platform**. The full rationale and tra
 | HIPAA | Not applicable while the app serves members and independent professionals directly. **Triggered** when the app acts for a covered entity (clinics, insurers). The Clinic phase requires BAAs with every vendor that handles PHI and HIPAA-eligible hosting. |
 | FDA | Positioned as a **general wellness** product. Clinician-entered plans and adherence tracking are in scope. The app does not generate diagnosis or treatment recommendations. Legal review is required before the public launch. |
 | Age | 18+ (no COPPA scope) |
-| App stores | Apple App Review (Sign in with Apple, HealthKit data-use rules, in-app purchase for digital subscriptions), Google Play (Health Connect permissions declaration, Play Billing), Microsoft Store |
+| App stores | Apple App Review (Guideline 4.8 privacy-preserving login option, met with Sign in with Apple; HealthKit data-use rules, in-app purchase for digital subscriptions), Google Play (Health Connect permissions declaration, Play Billing), Microsoft Store |
 | Data licensing | USDA FDC is public domain (attribution shown). Open Food Facts is ODbL plus CC-BY-SA images, and needs a licensing review before use. A commercial food database needs a license review (caching, display, attribution). |
 | AI vendor | A data processing agreement, no training on customer data, retention limits, and member consent before photos are sent |
 

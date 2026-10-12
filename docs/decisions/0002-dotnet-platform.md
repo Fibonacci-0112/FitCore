@@ -47,7 +47,7 @@ MAUI lets native pages and `BlazorWebView` pages live in the same app and share 
 | Device features | Through C# services, or a native page when needed | Native from the start |
 | Offline | SQLite in C#, the same in both | Same |
 | Accessibility | HTML semantics inside the WebView; needs VoiceOver/TalkBack testing | Native accessibility APIs, most predictable |
-| Testing | bUnit + Playwright | bUnit + Playwright (web) + Appium (apps) |
+| Testing | bUnit + Playwright for the shared Razor UI; Appium and the [native smoke checklist](../native-smoke-checklist.md) on devices for the native workout and scanner pages and the health, camera and notification integrations | bUnit + Playwright (web) + Appium (apps) + the native smoke checklist |
 | Coach web dashboard | Mostly the same components the apps already use | Built separately |
 
 **Revisit if:** WebView performance or accessibility fails testing on target devices (move more screens to native XAML), or Linux desktop becomes a requirement (consider Uno Platform).
@@ -55,7 +55,7 @@ MAUI lets native pages and `BlazorWebView` pages live in the same app and share 
 ## Decision 2: keep Supabase, add ASP.NET Core services
 
 - **Supabase** stays the system of record: Postgres, Auth, Storage and row-level security. The migrations, RLS policies, `private` helper functions and pgTAP tests carry over unchanged.
-- **Supabase Auth** provides email/password and the Google, Microsoft (Azure) and Apple providers. Sign in with Apple is required because Apple's App Review rules mandate it for iOS apps that offer other third-party social logins.
+- **Supabase Auth** provides email/password and the Google, Microsoft (Azure) and Apple providers. Apple App Review Guideline 4.8 requires an iOS app that offers third-party or social login to also offer an equivalent login option with defined privacy protections. We meet it with Sign in with Apple.
 - **ASP.NET Core** replaces the Deno Edge Function for server-side work: USDA and other food-database search and import into the shared catalog, AI calls, payment webhooks (RevenueCat, Stripe), notifications. It holds the service-role key and third-party API keys as server secrets only.
 - Clients call Supabase with the member's session so RLS still applies. Services act for the member by forwarding the member's JWT. They use the service role only for shared-catalog writes and system jobs.
 
