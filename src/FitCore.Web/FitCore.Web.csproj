@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- The fitcore-app process: the Blazor Web App host, the /v1 REST API and SignalR (ADR 0003 decision 1). -->
+
+  <PropertyGroup>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FitCore.Contracts\FitCore.Contracts.csproj" />
+    <ProjectReference Include="..\FitCore.Platform\FitCore.Platform.csproj" />
+    <ProjectReference Include="..\FitCore.Web.Client\FitCore.Web.Client.csproj" />
+  </ItemGroup>
+
+  <Import Project="..\Modules\Modules.targets" />
+
+</Project>

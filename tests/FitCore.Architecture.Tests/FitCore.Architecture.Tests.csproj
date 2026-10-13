@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Module boundaries and layering (ADR 0003 decision 2, NFR-MNT-4). -->
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FitCore.Client.Core\FitCore.Client.Core.csproj" />
+    <ProjectReference Include="..\..\src\FitCore.Web\FitCore.Web.csproj" />
+    <ProjectReference Include="..\..\src\FitCore.Web.Client\FitCore.Web.Client.csproj" />
+    <ProjectReference Include="..\..\src\FitCore.Worker\FitCore.Worker.csproj" />
+  </ItemGroup>
+
+</Project>

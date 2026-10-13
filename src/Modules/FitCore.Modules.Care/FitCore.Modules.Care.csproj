@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Grants and scopes, roster, plan assignment, comments, check-ins and messaging. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\FitCore.Domain\FitCore.Domain.csproj" />
+    <ProjectReference Include="..\..\FitCore.Platform\FitCore.Platform.csproj" />
+  </ItemGroup>
+
+</Project>

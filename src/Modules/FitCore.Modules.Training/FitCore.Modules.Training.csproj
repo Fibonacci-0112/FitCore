@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Workouts, templates, programs, PRs and training load. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\FitCore.Domain\FitCore.Domain.csproj" />
+    <ProjectReference Include="..\..\FitCore.Platform\FitCore.Platform.csproj" />
+  </ItemGroup>
+
+</Project>

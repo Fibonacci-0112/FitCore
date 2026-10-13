@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Audit queries and the member-visible audit view. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\FitCore.Domain\FitCore.Domain.csproj" />
+    <ProjectReference Include="..\..\FitCore.Platform\FitCore.Platform.csproj" />
+  </ItemGroup>
+
+</Project>
