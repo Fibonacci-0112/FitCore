@@ -72,4 +72,5 @@ console.log(`Output of \`node early-tap.mjs ${RUNS}\` on ${new Date().toISOStrin
 console.log('INP takes roughly the worst interaction of a page view, so the last column is the one that compares with the 200 ms target.\n');
 console.log('| Profile | Variant | Cache | Taps | Median | p75 | Worst | Median of each load\'s worst |');
 console.log('|---|---|---|---|---|---|---|---|');
-for (const r of rows) console.log(`| ${r.profile} | \`${r.path}\` | ${r.cache} | ${r.taps} | ${Math.round(r.p50)} | ${Math.round(r.p75)} | ${Math.round(r.max)} | ${Math.round(r.worst)} |`);
+// A row with no taps: the screen was interactive before the first tap could land.
+for (const r of rows) console.log(r.taps ? `| ${r.profile} | \`${r.path}\` | ${r.cache} | ${r.taps} | ${Math.round(r.p50)} | ${Math.round(r.p75)} | ${Math.round(r.max)} | ${Math.round(r.worst)} |` : `| ${r.profile} | \`${r.path}\` | ${r.cache} | 0 | interactive before the first tap | | | |`);
