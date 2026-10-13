@@ -2,7 +2,7 @@
 
 - **Status:** Draft v1, agreed with the product owner in a section-by-section interview
 - **Date:** 2026-10-12
-- **Related:** [`docs/PLAN.md`](PLAN.md) (technical plan for R1), [`docs/decisions/0002-dotnet-platform.md`](decisions/0002-dotnet-platform.md) (platform decision)
+- **Related:** [`docs/PLAN.md`](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/PLAN.md) (technical plan for R1) and [`docs/decisions/0002-dotnet-platform.md`](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/decisions/0002-dotnet-platform.md) (platform decision). Both were removed from the repository and are linked at the last commit that had them.
 
 This document gives the business view: who uses the product, what it does, and which rules and integrations it must respect. Where it changes the current technical plan, the change is listed in [§11](#11-impact-on-docsplanmd-follow-ups) instead of being applied silently.
 
@@ -114,7 +114,7 @@ R = read, W = write, — = no access. "Granted" means within an active grant and
 
 ## 5. Platform and technology constraints
 
-The product owner prefers **.NET on every platform**. The full rationale and trade-offs are in [decision 0002](decisions/0002-dotnet-platform.md) (status: Proposed).
+The product owner prefers **.NET on every platform**. The full rationale and trade-offs are in [decision 0002](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/decisions/0002-dotnet-platform.md) (status: Proposed).
 
 | Area | Requirement |
 |---|---|
@@ -215,7 +215,7 @@ These changes are **not** made in this document's PR. Each becomes its own follo
 
 | Area | Current plan | Change required |
 |---|---|---|
-| Platform | Expo + Electron; TypeScript `packages/core`; Deno Edge Function | .NET MAUI Blazor Hybrid + Blazor Web; C# domain library; ASP.NET Core services ([decision 0002](decisions/0002-dotnet-platform.md)). Update PLAN.md, AGENTS.md and CLAUDE.md. |
+| Platform | Expo + Electron; TypeScript `packages/core`; Deno Edge Function | .NET MAUI Blazor Hybrid + Blazor Web; C# domain library; ASP.NET Core services ([decision 0002](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/decisions/0002-dotnet-platform.md)). Update PLAN.md, AGENTS.md and CLAUDE.md. |
 | Authorization | Owner-only RLS | Add a grant model (for example `care_relationships` with scopes, status and audit) and grant-aware policies, with pgTAP tests for grantee and non-grantee access |
 | Targets | Cap at 1%/week; manual targets always win | Soft limits with logged override, a clinician-only hard floor, `targets.set_by` (member, coach, clinician) and an acceptance state |
 | Roles | Members only | Coach, clinician and admin roles; admin catalog curation |

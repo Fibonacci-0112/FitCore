@@ -12,16 +12,19 @@ The repository is at the requirements stage. It holds documentation only. No app
 |---|---|
 | `README.md` | Product overview, summarized from the BRD |
 | `docs/BRD.md` | Business requirements document |
-| `.github/workflows/ci.yml` | CI: Markdown lint |
+| `.github/workflows/ci.yml` | CI: Markdown lint and link check |
 | `.markdownlint-cli2.jsonc` | Markdown lint configuration |
 
 ## Commands
 
-CI lints every Markdown file. Run the same check before declaring a task done:
+CI lints every Markdown file and checks its links, including links to headings. Run the same checks before declaring a task done:
 
 ```sh
 npx markdownlint-cli2 "**/*.md"
+lychee --include-fragments '**/*.md'   # https://lychee.cli.rs
 ```
+
+Link to removed files at a commit permalink rather than leaving a dead relative link.
 
 ## Planned platform
 
