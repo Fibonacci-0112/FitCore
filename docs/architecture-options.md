@@ -1,7 +1,7 @@
 # Architecture Options: FitCore
 
-- **Status:** Proposal v2, for a decision by the product owner. Revised against the measurable NFRs in [`NFR.md`](NFR.md).
-- **Decision record:** [ADR 0003](decisions/0003-modular-monolith.md) (proposed)
+- **Status:** Proposal v2, revised against the measurable NFRs in [`NFR.md`](NFR.md). The product owner accepted Option B on 2026-10-13.
+- **Decision record:** [ADR 0003](decisions/0003-modular-monolith.md) (accepted)
 - **Date:** 2026-10-13
 - **Input:** [`BRD.md`](BRD.md) (especially [§3](BRD.md#3-permissions), [§5](BRD.md#5-platform-and-technology-constraints), [§6](BRD.md#6-business-rules) and [§7](BRD.md#7-compliance-and-constraints)) and [`NFR.md`](NFR.md)
 
@@ -414,7 +414,7 @@ The recommendation from the first version stands, and the measurable NFRs make t
 
 ### 7.4 Next steps
 
-1. Record this choice as an architecture decision record (NFR-MNT-5) once the product owner agrees.
+1. Record this choice as an architecture decision record (NFR-MNT-5). Done: [ADR 0003](decisions/0003-modular-monolith.md) was accepted on 2026-10-13.
 2. Spike the three riskiest mechanics: per-request RLS claims through Npgsql or EF Core with Supavisor, measured against NFR-PRF-1/2; Sign in with Apple and MFA from MAUI to Supabase; and the Blazor prerender plus WebAssembly bundle, measured against NFR-PRF-8.
 3. Build a cost model from current vendor quotes and confirm the $500 ceiling before the Public launch.
 4. Build the private beta from the Identity, Catalog, Nutrition, Targets and Progress modules. Put `care.relationships`, grant-aware RLS and the six-actor pgTAP pattern in place from the start.

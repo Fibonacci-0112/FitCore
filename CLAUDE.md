@@ -33,7 +33,7 @@ Use the pinned linter version: newer markdownlint releases add rules (such as MD
 
 - **Clients:** .NET MAUI apps with native XAML UI on iOS, Android, Windows and macOS, and a Blazor Web App on the web ([BRD §5](docs/BRD.md#5-platform-and-technology-constraints)). The two UIs are built separately and share view models, service clients and the domain library. Every feature ships on both (NFR-CMP-3).
 - **Domain logic:** one shared C# library for units, nutrition totals, estimated cost, targets and guardrails, with table tests and at least 90% coverage (NFR-MNT-1). Business logic never lives in UI code (NFR-MNT-4).
-- **Backend:** a modular monolith on ASP.NET Core (.NET 10 LTS), with Supabase for Postgres, Auth, Storage and RLS. This is **proposed** in [ADR 0003](docs/decisions/0003-modular-monolith.md) and isn't yet accepted, so confirm with the product owner before scaffolding code.
+- **Backend:** a modular monolith on ASP.NET Core (.NET 10 LTS), with Supabase for Postgres, Auth, Storage and RLS. This is **accepted** in [ADR 0003](docs/decisions/0003-modular-monolith.md) (2026-10-13). Its follow-up spikes come before the solution scaffold.
 - **Sign-in:** email/password, Google, Microsoft and Sign in with Apple, through Supabase Auth.
 
 When code is added, update this file with the layout and the commands to build, test and lint it, and extend CI to run them.
