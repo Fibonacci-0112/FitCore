@@ -1,0 +1,8 @@
+{
+  "name": "fitcore-webauthn-spike",
+  "private": true,
+  "type": "module",
+  "description": "Passkey and WebAuthn MFA checks against local Supabase Auth, using Chromium's virtual authenticator",
+  "scripts": { "check": "node check.mjs" },
+  "dependencies": { "playwright-core": "1.56.1" }
+}

@@ -410,11 +410,11 @@ The recommendation from the first version stands, and the measurable NFRs make t
 | Supabase has no contractual SLA at this plan level (NFR-AVL-1) | Monitor the SLO from the first day of the beta. If paying coaches or clinics need a contractual SLA (NFR open item 3), move to a plan with high availability and include it in the Coach/Pro budget. |
 | Per-request RLS claims interact with connection pooling | Spiked: see the [findings](spikes/rls-connection-pooling.md). Use `set local` inside each request's transaction, sent in the same round trip as the first statement. The API and worker connect through Supavisor session mode or directly, using Npgsql's pool; transaction mode hangs with Npgsql's defaults and can hand an open transaction to another client. Include identity handling and a mid-transaction client kill in the 3× load test. |
 | Modules tangle over time | A schema per module with separate grants, architecture tests in CI, and references to contracts only |
-| Supabase Auth doesn't yet support passkey MFA (NFR-SEC-3) | Confirm during the spike. If it's missing, launch with TOTP and record the gap. |
+| Supabase Auth doesn't yet support passkey MFA (NFR-SEC-3) | Spiked: see the [findings](spikes/apple-sign-in-and-mfa.md). Passkey sign-in is in beta and gives `aal1`, and WebAuthn as a factor is undocumented. Launch with TOTP, require `aal2` in the API and RLS for clinicians and admins, and track passkeys as [NFR open item 4](NFR.md#17-open-items). |
 
 ### 7.4 Next steps
 
 1. Record this choice as an architecture decision record (NFR-MNT-5). Done: [ADR 0003](decisions/0003-modular-monolith.md) was accepted on 2026-10-13.
-2. Spike the three riskiest mechanics: per-request RLS claims through Npgsql or EF Core with Supavisor, measured against NFR-PRF-1/2 (done: [findings](spikes/rls-connection-pooling.md)); Sign in with Apple and MFA from MAUI to Supabase; and the Blazor prerender plus WebAssembly bundle, measured against NFR-PRF-8.
+2. Spike the three riskiest mechanics: per-request RLS claims through Npgsql or EF Core with Supavisor, measured against NFR-PRF-1/2 (done: [findings](spikes/rls-connection-pooling.md)); Sign in with Apple and MFA from MAUI to Supabase (partly done: [findings](spikes/apple-sign-in-and-mfa.md)); and the Blazor prerender plus WebAssembly bundle, measured against NFR-PRF-8.
 3. Build a cost model from current vendor quotes and confirm the $500 ceiling before the Public launch.
 4. Build the private beta from the Identity, Catalog, Nutrition, Targets and Progress modules. Put `care.relationships`, grant-aware RLS and the six-actor pgTAP pattern in place from the start.
