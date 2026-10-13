@@ -51,7 +51,7 @@ This document gives the business view: who uses the product, what it does, and w
 ### 3.1 Sharing model
 
 - **Private by default.** No one but the member sees their data.
-- **Opt-in grants.** A member can invite a coach or clinician, or accept an invitation from one. A grant covers specific **scopes** (for example nutrition, training, body metrics, photos, wellness). Within a granted scope, the professional gets exactly the access the [permission matrix](#32-permission-matrix) lists for their role and nothing more. Professionals can always read granted data. They can write only targets and assigned plans, plus comments, messages and check-in responses. A member's own logs (diary, weight, measurements, photos, wellness) stay read-only to them.
+- **Opt-in grants.** A member can invite a coach or clinician, or accept an invitation from one. A grant covers specific **scopes** (for example nutrition, training, body metrics, photos, wellness). Within a granted scope, the professional gets exactly the access the [permission matrix](#32-permission-matrix) lists for their role and nothing more. Professionals can always read granted data. They can write only targets and assigned plans, plus comments, messages and check-in responses. A member's own logs (diary, weight, measurements, photos, wellness) stay read-only to professionals.
 - **Revocable at any time.** Revoking access stops it immediately. Content the professional authored, such as comments and plans, stays in the member's history.
 - **Audited.** Granting, changing and revoking access is logged. So is every edit a professional makes to a member's data. The member can see that log.
 

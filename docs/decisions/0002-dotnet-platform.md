@@ -72,7 +72,7 @@ MAUI lets native pages and `BlazorWebView` pages live in the same app and share 
 
 - **Rewrite cost.** The Expo app, the Electron shell and `packages/core` are rebuilt in C#. The TypeScript code stays in the repo as the reference implementation until the .NET version reaches R1 parity, then gets removed.
 - **What carries over:** the database schema, RLS policies, `private` helpers, RPC functions, pgTAP tests, data contracts, and the core rules with their table tests (ported to C# test projects).
-- **Supabase C# client** (`supabase-csharp`) is community-maintained, not first-party. Mitigation: keep data access behind our own interfaces. Where it is enough, call PostgREST and GoTrue over plain HTTP with typed models.
+- **Supabase C# client** (`supabase-csharp`) is community-maintained, not first-party. Mitigation: keep data access behind our own interfaces. Where it is enough, call PostgREST and GoTrue directly with `HttpClient` and typed models, always over HTTPS. Credential-bearing requests go straight to the HTTPS endpoint and never rely on an HTTP redirect or upgrade.
 - **MAUI risk.** MAUI has had regressions between releases. Mitigation: pin SDK versions, run device smoke tests per release (extending `docs/native-smoke-checklist.md`), upgrade deliberately.
 - **Windows packaging** moves from an Electron `.appx` to a MAUI MSIX, which Partner Center accepts natively. The OAuth redirect design in 0001 (custom `hfn:` protocol, PKCE, no unsolicited sessions) still applies; MAUI's `WebAuthenticator` handles it on mobile.
 - **Tooling and CI.** The .NET SDK with the MAUI workloads replaces Node for the apps. iOS and macOS builds need macOS runners, and the Windows MSIX build needs a Windows runner.
