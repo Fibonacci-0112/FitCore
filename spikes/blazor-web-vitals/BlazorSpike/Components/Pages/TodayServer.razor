@@ -1,20 +1,7 @@
 @page "/server"
 @rendermode InteractiveServer
-@inject IDiaryClient Diary
+@inherits CircuitTodayPage
 
-@* Reference only: Interactive Server keeps a circuit per tab, which NFR-SCL-2 rules out. *@
+@* Interactive Server: one circuit per tab. NFR-SCL-2 rules it out today; the render-modes comparison retests it. *@
 <PageTitle>Today (Interactive Server)</PageTitle>
-<TodayView Model="model" />
-
-@code {
-    [PersistentState]
-    public DiaryDayDto? Day { get; set; }
-
-    private TodayViewModel? model;
-
-    protected override async Task OnInitializedAsync()
-    {
-        Day ??= await Diary.GetTodayAsync();
-        model = new TodayViewModel(Day, Diary);
-    }
-}
+<TodayView Model="Model" />

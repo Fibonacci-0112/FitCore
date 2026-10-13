@@ -1,15 +1,31 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using BlazorSpike.Core;
 
 namespace BlazorSpike;
 
 // In-memory stand-in for the Nutrition module. One member, one day of 18 entries, some with
 // unknown nutrients or no price. Writes wait 80 ms to stand in for a database round trip.
+// With a file path, added entries survive a server restart, as the database would make them.
 public sealed class DiaryStore
 {
     private static readonly TimeZoneInfo ProfileZone = TimeZoneInfo.FindSystemTimeZoneById("America/Chicago");
     private readonly ConcurrentDictionary<Guid, DiaryEntryDto> added = new();
+    private readonly string? file;
+    private readonly Lock fileLock = new();
     private int todayReads;
+
+    public DiaryStore(string? file = null)
+    {
+        this.file = file;
+        if (file is not null && File.Exists(file))
+        {
+            foreach (var e in JsonSerializer.Deserialize<List<DiaryEntryDto>>(File.ReadAllText(file)) ?? [])
+                added[e.Id] = e;
+        }
+    }
+
+    public int AddedCount => added.Count;
 
     public int TodayReads => todayReads;
 
@@ -30,14 +46,26 @@ public sealed class DiaryStore
     public async Task<DiaryEntryDto> AddAsync(DateOnly date, DiaryEntryDto entry)
     {
         await Task.Delay(80);
-        return added.GetOrAdd(entry.Id, entry); // client-generated ID makes retries idempotent
+        var saved = added.GetOrAdd(entry.Id, entry); // client-generated ID makes retries idempotent
+        Save();
+        return saved;
     }
+
+    /// <summary>Returns today's entries without counting a read, for the islands fragment after a save.</summary>
+    public DiaryDayDto Snapshot() => new(Today(), 2200, 140m, Seed().Concat(added.Values).ToList());
 
     /// <summary>Clears added entries and the read counter between measurement runs.</summary>
     public void Reset()
     {
         added.Clear();
         todayReads = 0;
+        Save();
+    }
+
+    private void Save()
+    {
+        if (file is null) return;
+        lock (fileLock) File.WriteAllText(file, JsonSerializer.Serialize(added.Values.ToList()));
     }
 
     /// <summary>Creates 18 reproducible diary entries, including entries with unknown nutrients or missing prices.</summary>
