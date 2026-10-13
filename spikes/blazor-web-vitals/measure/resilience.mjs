@@ -56,6 +56,7 @@ async function run(variant, fault) {
   const ui = new Set();
   let uiMs = 0;
   const t0 = Date.now();
+  let done = false;
   const watch = (async () => {
     while (Date.now() - t0 < fault.ms + 60_000 && !done) {
       const text = await reconnectUi(page).catch(() => 'page navigating');
@@ -63,7 +64,6 @@ async function run(variant, fault) {
       await sleep(200);
     }
   })();
-  let done = false;
   if (fault.kind === 'stall') proxy.stall(fault.ms);
   if (fault.kind === 'reset') proxy.reset(fault.ms);
   if (fault.kind === 'restart') await server.stop(fault.signal);
@@ -109,7 +109,8 @@ async function run(variant, fault) {
   return result;
 }
 
-for (const fault of FAULTS) {
+// FAULTS=stall10,deploy picks faults (default: all).
+for (const fault of FAULTS.filter((f) => !process.env.FAULTS || process.env.FAULTS.split(',').includes(f.id))) {
   for (const variant of VARIANTS) {
     for (let i = 0; i < RUNS; i++) rows.push(await run(variant, fault));
   }

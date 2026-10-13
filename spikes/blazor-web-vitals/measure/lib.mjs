@@ -84,7 +84,14 @@ export const readTaps = (page) => page.evaluate(() => {
 export const reconnectUi = (page) => page.evaluate(() => {
   const el = document.getElementById('components-reconnect-modal');
   const visible = (x) => !!x && x.checkVisibility?.() && getComputedStyle(x).display !== 'none';
-  if (visible(el)) return (el.innerText || el.shadowRoot?.textContent || 'reconnect UI').replace(/\s+/g, ' ').trim().slice(0, 80) || 'reconnect UI';
+  if (visible(el)) {
+    // The default UI lives in a shadow root with its own <style>; read only the visible text.
+    const root = el.shadowRoot ?? el;
+    const text = [...root.querySelectorAll('*')]
+      .filter((n) => n.tagName !== 'STYLE' && n.children.length === 0 && n.checkVisibility?.())
+      .map((n) => n.textContent.trim()).filter(Boolean).join(' ');
+    return `"${text.replace(/\s+/g, ' ').slice(0, 60)}"` || 'reconnect UI';
+  }
   const err = document.getElementById('blazor-error-ui');
   if (visible(err)) return 'error UI';
   return null;

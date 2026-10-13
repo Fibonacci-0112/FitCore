@@ -41,10 +41,10 @@ for (const variant of VARIANTS) {
     console.error(`${variant.path} ${n} tabs: ${m.circuits} circuits, managed ${(m.managedBytes / MiB).toFixed(1)} MiB, working set ${(m.workingSetBytes / MiB).toFixed(0)} MiB`);
   }
   const n = pages.length;
-  await context.close(); // tabs gone without a goodbye
+  await context.close(); // the browser closes the tabs, and with them their WebSockets
   await sleep(5000);
   const after = await memory();
-  rows.push({ variant: variant.name, tabs: n, state: 'closed 5 s ago', ...after, perTab: n ? (after.managedBytes - base.managedBytes) / n : null });
+  rows.push({ variant: variant.name, tabs: n, state: 'tabs closed 5 s ago', ...after, perTab: n ? (after.managedBytes - base.managedBytes) / n : null });
   console.error(`${variant.path} closed: ${after.circuits} circuits, managed ${(after.managedBytes / MiB).toFixed(1)} MiB`);
   await browser.close();
   await server.stop();
@@ -53,7 +53,7 @@ for (const variant of VARIANTS) {
 console.log('# Server memory per open tab\n');
 console.log(`Output of \`node memory.mjs\` on ${new Date().toISOString().slice(0, 10)}. One server process per variant, warmed up with one page view first. Memory after a full, compacting garbage collection. The Today screen has 18 diary rows; a bigger component tree holds more per circuit.\n`);
 console.log('- **Managed per tab:** growth of the managed heap since 0 tabs, divided by the number of tabs.');
-console.log('- **Closed 5 s ago:** every tab closed without warning, as when a phone drops a background tab. Disconnected circuits are kept for `DisconnectedCircuitRetentionPeriod` (3 minutes by default) in case the tab comes back.\n');
+console.log('- **Tabs closed 5 s ago:** the browser closed every tab, which closes their WebSockets cleanly, so the server ends those circuits at once. A tab that vanishes without closing its connection (a phone that loses signal or kills a background tab) leaves a disconnected circuit in memory for `DisconnectedCircuitRetentionPeriod`, 3 minutes by default; `resilience.mjs` covers that case.\n');
 console.log('| Variant | Tabs | State | Circuits | Managed heap, MiB | Working set, MiB | Managed per tab, KiB |');
 console.log('|---|---|---|---|---|---|---|');
 for (const r of rows) console.log(`| ${r.variant} | ${r.tabs} | ${r.state} | ${r.circuits} | ${(r.managedBytes / MiB).toFixed(1)} | ${(r.workingSetBytes / MiB).toFixed(0)} | ${r.perTab == null ? 'n/a' : (r.perTab / 1024).toFixed(0)} |`);
