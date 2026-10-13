@@ -1,6 +1,6 @@
 # Non-Functional Requirements: FitCore
 
-- **Status:** Draft v1. Sizing, availability and budget agreed with the product owner. Values marked *review* need legal or clinical sign-off.
+- **Status:** Draft v1. Sizing, availability, budget, support hours and supported OS versions confirmed by the product owner on 2026-10-13. Values marked *review* still need legal sign-off.
 - **Date:** 2026-10-13
 - **Related:** [`BRD.md`](BRD.md) (business requirements). This document replaces the "to be defined" row in [BRD §9](BRD.md#9-non-functional-requirements).
 
@@ -217,4 +217,3 @@ How the obligations in [BRD §7](BRD.md#7-compliance-and-constraints) map to the
 1. **Legal review** of the deletion and backup windows (NFR-DAT-2), deletion of professional-authored content (NFR-DAT-3) and audit retention (NFR-DAT-4).
 2. **Budget re-check** of NFR-CST-1 once the commercial food database and AI vendors are chosen ([BRD §10](BRD.md#10-open-questions-and-decisions-needed)); either can exceed the budget on its own.
 3. **Availability for paying customers.** Whether the Coach/Pro or Clinic phases need a contractual SLA above 99.5%, which would need redundancy and a higher Supabase plan.
-4. **Support hours.** NFR-OPS-4 assumes a small team; extend coverage if the Coach/Pro tier needs it.
