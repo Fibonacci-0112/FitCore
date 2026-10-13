@@ -1,0 +1,6 @@
+{
+  // Prose and tables are written one paragraph or row per line.
+  "config": {
+    "MD013": false
+  }
+}
