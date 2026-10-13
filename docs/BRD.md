@@ -197,7 +197,7 @@ R = read, W = write, — = no access. "Granted" means within an active grant and
 | Accessibility | WCAG 2.2 AA on web; VoiceOver and TalkBack support on mobile |
 | Platforms | iOS, Android, Windows, macOS, web ([§5](#5-platform-and-technology-constraints)) |
 | Data retention | Members can export and delete their data. Deletion completes within the period the applicable privacy law sets. |
-| Measurable targets | Availability, performance, scalability and cost targets: **to be defined** (next step) |
+| Measurable targets | Defined in [`NFR.md`](NFR.md): 99.5% monthly availability, RPO ≤ 1 h and RTO ≤ 8 h, p95 latency targets, sizing for 10k members with 10× headroom, and a $500/month infrastructure budget at launch |
 
 ## 10. Open questions and decisions needed
 
@@ -207,6 +207,7 @@ R = read, W = write, — = no access. "Granted" means within an active grant and
 4. **Commercial food database** vendor and **AI vision** vendor.
 5. **Success-metric targets** ([§1](#1-purpose-vision-and-success-metrics)).
 6. **Clinician credential verification** method (for example NPI lookup, license checks).
+7. **Non-functional requirements** needing legal sign-off or a budget re-check ([`NFR.md` §17](NFR.md#17-open-items)).
 
 ## 11. Changes from the R1 prototype
 
