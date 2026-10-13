@@ -27,7 +27,7 @@ const PROFILES = [
   { id: 'desktop', name: 'Desktop cable, 1x CPU', latency: 40, down: 10240e3 / 8, up: 10240e3 / 8, cpu: 1 },
 ];
 
-// Runs in the page before any script. Collects metrics into window.__m.
+/** Installs page observers before application scripts to collect Web Vitals and tap timings in window.__m. */
 const probe = () => {
   const m = (window.__m = { lcp: null, cls: 0, fcp: null, ttfb: null, events: [], tap: null, row: null, saved: null });
   const opts = { reportAllChanges: true };
@@ -50,6 +50,7 @@ const probe = () => {
   }).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-pending'] });
 };
 
+/** Measures a cold and then a warm visit in one browser context under the supplied network and CPU profile. */
 async function measure(browser, variant, profile) {
   const context = await browser.newContext({ viewport: { width: 412, height: 823 }, deviceScaleFactor: 1.75 });
   await context.addInitScript({ content: WEB_VITALS });
@@ -69,6 +70,7 @@ async function measure(browser, variant, profile) {
     if ((urls.get(e.requestId) ?? '').includes('/_framework/')) bytes.framework += e.encodedDataLength;
   });
 
+  /** Resets the diary, loads the variant and measures feedback for one add when interactive. */
   const visit = async () => {
     bytes = { total: 0, framework: 0 };
     const reset = await fetch(`${BASE}/api/_reset`, { method: 'POST' });
@@ -105,15 +107,20 @@ async function measure(browser, variant, profile) {
   return { cold, warm };
 }
 
+/** Returns the median excluding null, undefined and NaN samples, or null if none remain. */
 const median = (xs) => {
   const s = xs.filter((x) => x !== null && x !== undefined && !Number.isNaN(x)).sort((a, b) => a - b);
   if (!s.length) return null;
   const mid = Math.floor(s.length / 2);
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 };
+/** Returns the maximum excluding null and undefined samples, or null if none remain. */
 const max = (xs) => (xs.some((x) => x != null) ? Math.max(...xs.filter((x) => x != null)) : null);
+/** Formats milliseconds as a whole number, or n/a for a missing metric. */
 const ms = (x) => (x == null ? 'n/a' : `${Math.round(x)}`);
+/** Formats bytes as whole KiB, or n/a for a missing metric. */
 const kb = (x) => (x == null ? 'n/a' : (x / 1024).toFixed(0));
+/** Formats layout shift to three decimal places, or n/a for a missing metric. */
 const cls = (x) => (x == null ? 'n/a' : x.toFixed(3));
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
@@ -124,6 +131,7 @@ for (const profile of PROFILES) {
     for (let i = 0; i < RUNS; i++) runs.push(await measure(browser, variant, profile));
     for (const cache of ['cold', 'warm']) {
       const r = runs.map((x) => x[cache]);
+      /** Extracts a metric from every run for this cache state. */
       const pick = (f) => r.map(f);
       rows.push({
         profile: profile.name, variant: variant.name, cache,

@@ -10,6 +10,7 @@ const PATHS = ['/wasm', '/wasm-nopersist', '/server'];
 const CPUS = [1, 2, 4];
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+/** Returns the median of a nonempty numeric sample without changing its order. */
 const median = (xs) => { const s = [...xs].sort((a, b) => a - b); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const rows = [];
 for (const path of PATHS) {

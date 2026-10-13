@@ -13,8 +13,9 @@ public sealed record DiaryDayDto(
 
 public interface IDiaryClient
 {
-    // "Today" is the member's local date, resolved on the server from the profile time zone.
+    /// <summary>Gets today's diary using the member's local date, resolved from the profile time zone.</summary>
     Task<DiaryDayDto> GetTodayAsync(CancellationToken ct = default);
+    /// <summary>Adds an entry for the supplied diary date and returns the saved entry.</summary>
     Task<DiaryEntryDto> AddAsync(DateOnly date, DiaryEntryDto entry, CancellationToken ct = default);
 }
 
@@ -22,6 +23,7 @@ public sealed record NutritionTotals(
     int KcalAtLeast, decimal ProteinAtLeast, long CostMinorAtLeast,
     int IncompleteNutrients, int MissingCost)
 {
+    /// <summary>Sums known nutrients and costs as lower bounds, counting entries with missing values (BRD §6.1).</summary>
     public static NutritionTotals Sum(IEnumerable<DiaryEntryDto> entries)
     {
         int kcal = 0, incomplete = 0, missingCost = 0;
@@ -42,7 +44,7 @@ public static class Money
 {
     private static readonly CultureInfo Us = CultureInfo.GetCultureInfo("en-US");
 
-    // The spike only handles USD; real code looks up the currency's minor-unit exponent.
+    /// <summary>Formats USD cents as US currency; other currencies retain their integer minor units and code.</summary>
     public static string Format(long minor, string currency) =>
         currency == "USD" ? (minor / 100m).ToString("C", Us) : $"{minor} {currency} (minor units)";
 }

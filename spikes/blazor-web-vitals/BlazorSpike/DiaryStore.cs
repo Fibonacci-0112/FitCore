@@ -13,11 +13,11 @@ public sealed class DiaryStore
 
     public int TodayReads => todayReads;
 
-    // The member's local date comes from the profile time zone, never the server clock or the
-    // browser, so prerendering on the server and rendering on the client agree.
+    /// <summary>Returns the current date in the member's profile time zone, shared by all render modes.</summary>
     public static DateOnly Today() =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ProfileZone));
 
+    /// <summary>Returns today's seeded and added entries with fixed targets, incrementing the read counter.</summary>
     public DiaryDayDto GetToday()
     {
         Interlocked.Increment(ref todayReads);
@@ -25,18 +25,22 @@ public sealed class DiaryStore
         return new DiaryDayDto(Today(), 2200, 140m, entries);
     }
 
+    /// <summary>Simulates an 80 ms write and returns the entry stored by ID, making repeated IDs idempotent.</summary>
+    /// <remarks>This single-day spike ignores the supplied date.</remarks>
     public async Task<DiaryEntryDto> AddAsync(DateOnly date, DiaryEntryDto entry)
     {
         await Task.Delay(80);
         return added.GetOrAdd(entry.Id, entry); // client-generated ID makes retries idempotent
     }
 
+    /// <summary>Clears added entries and the read counter between measurement runs.</summary>
     public void Reset()
     {
         added.Clear();
         todayReads = 0;
     }
 
+    /// <summary>Creates 18 reproducible diary entries, including entries with unknown nutrients or missing prices.</summary>
     private static IEnumerable<DiaryEntryDto> Seed()
     {
         string[] meals = ["Breakfast", "Lunch", "Dinner", "Snack"];
@@ -58,11 +62,13 @@ public sealed class DiaryStore
     }
 }
 
-// Server-side IDiaryClient for prerendering and Interactive Server: calls the module directly.
+/// <summary>Calls the diary store directly for prerendering and Interactive Server.</summary>
 public sealed class InProcessDiaryClient(DiaryStore store) : IDiaryClient
 {
+    /// <summary>Returns today's diary directly from the store; the spike ignores cancellation.</summary>
     public Task<DiaryDayDto> GetTodayAsync(CancellationToken ct = default) => Task.FromResult(store.GetToday());
 
+    /// <summary>Adds an entry directly to the store; the spike ignores cancellation.</summary>
     public Task<DiaryEntryDto> AddAsync(DateOnly date, DiaryEntryDto entry, CancellationToken ct = default) =>
         store.AddAsync(date, entry);
 }

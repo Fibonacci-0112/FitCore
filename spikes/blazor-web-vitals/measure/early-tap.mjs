@@ -14,6 +14,7 @@ const PROFILES = [
 const PATHS = ['/wasm', '/server'];
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+/** Returns the sorted sample at percentile fraction p (0–1), or null for an empty sample. */
 const pct = (xs, p) => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : null; };
 const rows = [];
 for (const profile of PROFILES) {

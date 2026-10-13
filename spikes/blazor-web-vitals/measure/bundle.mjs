@@ -9,6 +9,7 @@ const files = readdirSync(dir).filter((f) => f.endsWith('.br')).map((f) => ({
   br: statSync(join(dir, f)).size,
   raw: statSync(join(dir, f.slice(0, -3))).size,
 })).sort((a, b) => b.br - a.br);
+/** Formats a byte count as whole KiB for the payload table. */
 const kib = (n) => (n / 1024).toFixed(0);
 console.log('# WebAssembly payload\n');
 console.log(`Output of \`node bundle.mjs\` on ${new Date().toISOString().slice(0, 10)}: every file under \`_framework/\` that has a brotli copy, largest first. A browser downloads only the ICU shard for its culture (\`icudt_EFIGS.dat\` for English), and \`blazor.server.js\` is never loaded by the WebAssembly pages.\n`);

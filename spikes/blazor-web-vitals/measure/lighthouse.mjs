@@ -11,6 +11,7 @@ const RUNS = Number(process.argv[2] ?? 3);
 const CHROME = process.env.CHROMIUM ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const PATHS = ['/static', '/wasm', '/wasm-nopersist', '/wasm-noprerender', '/server'];
 const out = mkdtempSync(join(tmpdir(), 'lh-'));
+/** Returns the median of a nonempty numeric sample without changing its order. */
 const median = (xs) => { const s = [...xs].sort((a, b) => a - b); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 
 const rows = [];
@@ -31,6 +32,7 @@ for (const preset of ['mobile', 'desktop']) {
         cls: a['cumulative-layout-shift'].numericValue, tbt: a['total-blocking-time'].numericValue,
         tti: a['interactive'].numericValue, kib: a['total-byte-weight'].numericValue / 1024 });
     }
+    /** Returns the median of one Lighthouse metric across this variant's runs. */
     const pick = (k) => median(runs.map((r) => r[k]));
     rows.push({ preset, path, score: pick('score'), lcp: pick('lcp'), cls: pick('cls'), tbt: pick('tbt'), tti: pick('tti'), kib: pick('kib') });
     console.error(`${preset} ${path}: score ${pick('score')} LCP ${Math.round(pick('lcp'))}`);

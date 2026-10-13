@@ -9,6 +9,7 @@ public sealed partial class TodayViewModel : ObservableObject
 {
     private readonly IDiaryClient client;
 
+    /// <summary>Initializes the day's targets, saved diary rows and totals with a client for subsequent writes.</summary>
     public TodayViewModel(DiaryDayDto day, IDiaryClient client)
     {
         this.client = client;
@@ -27,8 +28,8 @@ public sealed partial class TodayViewModel : ObservableObject
     [ObservableProperty]
     public partial NutritionTotals Totals { get; set; }
 
-    // Optimistic add (NFR-PRF-7): the row shows before the server confirms it. The client
-    // generates the ID so a retry is idempotent.
+    /// <summary>Adds a banana row and updates totals before saving it, then marks the row saved or failed (NFR-PRF-7).</summary>
+    /// <remarks>The client generates the entry ID so a retry is idempotent.</remarks>
     [RelayCommand]
     private async Task QuickAddAsync()
     {
@@ -54,6 +55,7 @@ public sealed partial class TodayViewModel : ObservableObject
     }
 }
 
+/// <summary>Wraps a diary entry with observable save and failure flags for the Today screen.</summary>
 public sealed partial class EntryRow(DiaryEntryDto entry) : ObservableObject
 {
     public DiaryEntryDto Entry { get; } = entry;
