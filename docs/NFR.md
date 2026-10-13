@@ -24,7 +24,7 @@ The targets are sized for the first 12 months of the public member app. The arch
 | Registered members | 10,000 | 100,000 |
 | Daily active members | 2,000 | 20,000 |
 | Active coaches and clinicians | 300 | 3,000 |
-| Peak API load | 50 requests/s sustained, bursts to 150 requests/s | 500 requests/s |
+| Peak API load | 50 requests/s sustained, bursts to 150 requests/s | 500 requests/s sustained, bursts to 1,500 requests/s |
 | Diary entries | ~20,000 per day | ~200,000 per day |
 | Stored data (database + photos) | ≤ 100 GB after year 1 | ≤ 1 TB |
 
@@ -34,7 +34,7 @@ The targets are sized for the first 12 months of the public member app. The arch
 |---|---|---|---|
 | NFR-AVL-1 | Backend availability (API, Auth, database) is at least **99.5% per calendar month** (about 3.6 hours of downtime). Beta is best effort. | Public | External uptime monitoring; monthly SLO report |
 | NFR-AVL-2 | Planned maintenance is at most 2 hours per month, announced at least 48 hours ahead, and scheduled outside 06:00–22:00 US Eastern. It does not count against NFR-AVL-1. | Public | Maintenance log |
-| NFR-AVL-3 | **Recovery point objective (RPO) ≤ 1 hour**: no more than one hour of committed data can be lost in a disaster. Beta: ≤ 24 hours (daily backups). | Public | Point-in-time recovery enabled; restore drill |
+| NFR-AVL-3 | **Recovery point objective (RPO) ≤ 1 hour**: no more than one hour of committed data can be lost in a disaster. In Beta the limit is ≤ 24 hours (daily backups); it tightens to ≤ 1 hour at the Public launch. | Beta | Point-in-time recovery enabled; restore drill |
 | NFR-AVL-4 | **Recovery time objective (RTO) ≤ 8 hours** from a declared disaster to service restored. | Public | Restore drill |
 | NFR-AVL-5 | A full database and storage restore is rehearsed at least once per quarter, and the measured RPO and RTO are recorded. | Public | Drill report |
 | NFR-AVL-6 | An outage of a third-party service (USDA, commercial food database, AI provider, health-platform sync, email, push) degrades only the feature that uses it. Diary logging, custom foods, recents and saved meals keep working. | Beta | Fault-injection tests |
@@ -67,7 +67,7 @@ Targets are measured at the [launch peak load](#11-sizing-assumptions). Device t
 | NFR-SCL-2 | ASP.NET Core services are stateless and scale horizontally; no request depends on instance-local state. | Beta | Architecture review |
 | NFR-SCL-3 | Every query on member data filters by an indexed member or grant key. No unbounded list endpoint exists; all lists are paginated with a maximum page size. | Beta | Query-plan review; API lint |
 | NFR-SCL-4 | Capacity is reviewed when any resource (database CPU, connections, storage, egress, plan quota) passes 70% of its limit for 7 days. | Public | Monitoring alert |
-| NFR-SCL-5 | Rate limits protect shared resources: per-member and per-IP limits on all APIs, and stricter limits on auth, search and AI endpoints. | Beta | Integration tests |
+| NFR-SCL-5 | Rate limits use a token bucket per member and per IP. General API: 300 requests/min per member and 600 requests/min per IP. Food search: 60 requests/min per member. Sign-in and password reset: 10 attempts/min per IP and 5 failures per account per 15 minutes. AI endpoints: 10 requests/min per member, plus the daily quota in NFR-CST-3. Bursts up to 2× the per-minute limit are allowed while the bucket has tokens. Over the limit, the API returns HTTP 429 with a `Retry-After` header, and the apps back off without losing entered data. | Beta | Integration tests per endpoint class |
 | NFR-SCL-6 | Photos are resized and compressed on the device before upload (long edge ≤ 2,048 px). Uploads over 10 MB are rejected. | Public | Unit and integration tests |
 
 ## 5. Reliability and data integrity
@@ -77,7 +77,7 @@ These make the BRD's data contracts ([BRD §6.1](BRD.md#61-data-contracts)) and 
 | ID | Requirement | Phase | Verification |
 |---|---|---|---|
 | NFR-REL-1 | A failed save never loses what the member entered. The form keeps its state and offers retry. | Beta | UI tests with injected failures |
-| NFR-REL-2 | Workout logging works fully offline, and the queue survives app restarts and device reboots. Diary and weight entries are queued offline too from the Public phase. | Public | Device tests |
+| NFR-REL-2 | Workout logging works fully offline, and the queue survives app restarts and device reboots. Diary and weight entries are queued offline too. | Public | Device tests |
 | NFR-REL-3 | Sync is idempotent: every record has a client-generated UUID, and replaying a sync produces **zero duplicates**. Conflicts resolve last-writer-wins per record, and the member is told when their change was overwritten. | Public | Automated sync tests, including replay and conflict cases |
 | NFR-REL-4 | Log-entry snapshots are immutable: editing a food, recipe or price never changes a past entry's nutrients or cost. | Beta | Domain and database tests |
 | NFR-REL-5 | Unknown values are never stored or shown as zero. Totals with unknowns are shown as a lower bound with an incomplete-item count. | Beta | Domain table tests |
@@ -90,8 +90,8 @@ These make the BRD's data contracts ([BRD §6.1](BRD.md#61-data-contracts)) and 
 
 | ID | Requirement | Phase | Verification |
 |---|---|---|---|
-| NFR-SEC-1 | The system meets **OWASP ASVS 4.0 Level 2**. | Public | ASVS checklist review before each phase launch |
-| NFR-SEC-2 | Passwords follow NIST SP 800-63B: at least 8 characters, no composition rules, checked against a breached-password list. | Beta | Auth tests |
+| NFR-SEC-1 | The system meets **OWASP ASVS 5.0.0 Level 2**. | Public | ASVS checklist review before each phase launch |
+| NFR-SEC-2 | Passwords follow NIST SP 800-63B-4: at least 15 characters when the password is the only factor and at least 8 when MFA is on, at least 64 characters allowed, no composition rules, checked against a breached-password list. | Beta | Auth tests |
 | NFR-SEC-3 | MFA (TOTP or passkey) is available to all users, and **required** for clinicians and admins. Coaches are prompted to enable it. | Coach/Pro (admins: Public) | Auth tests; admin policy |
 | NFR-SEC-4 | Sign-in endpoints are rate-limited and lock out progressively after repeated failures. Sessions use short-lived access tokens (≤ 1 hour) and rotating refresh tokens; signing out revokes them. | Beta | Auth tests |
 | NFR-SEC-5 | Secrets (service-role keys, vendor API keys) exist only in server-side secret storage, never in client builds or the repository. They are rotated at least every 90 days and immediately after suspected exposure. | Beta | Secret scanning in CI; rotation log |
@@ -122,7 +122,7 @@ These make the BRD's data contracts ([BRD §6.1](BRD.md#61-data-contracts)) and 
 
 | ID | Requirement | Phase | Verification |
 |---|---|---|---|
-| NFR-DAT-1 | Self-service export (CSV) of all the member's data, including photos, is available within **24 hours** of the request. | Public | Integration test |
+| NFR-DAT-1 | Self-service export of all the member's data is available within **24 hours** of the request, as a ZIP archive with one UTF-8 CSV file per data area, the original photo files in a `photos/` folder referenced by file name from the CSVs, and a `manifest.json` listing every file with its record count. | Public | Integration test |
 | NFR-DAT-2 | Self-service account deletion removes the member's data from primary stores within **30 days** and from backups within **35 days**, inside the CCPA/CPRA 45-day response window. *Review.* | Public | Deletion test; backup expiry check |
 | NFR-DAT-3 | Content the member's professionals authored (comments, plans) is deleted with the member's account; the professional keeps only their own roster record showing the relationship ended. *Review.* | Coach/Pro | Deletion test |
 | NFR-DAT-4 | The audit log ([§9](#9-auditability)) is kept for **6 years**. After account deletion its entries are pseudonymized: no names, emails or health values remain. *Review.* | Public | Retention job test |
@@ -195,7 +195,7 @@ These make the BRD's data contracts ([BRD §6.1](BRD.md#61-data-contracts)) and 
 |---|---|---|---|
 | NFR-CST-1 | Total monthly infrastructure cost at the [launch sizing](#11-sizing-assumptions) is **at most $500**. It covers Supabase, ASP.NET Core hosting, email, push, monitoring, error tracking and AI calls. Store fees, payment fees and the pen test are excluded. | Public | Monthly cost report |
 | NFR-CST-2 | Billing alerts fire at 80% and 100% of the monthly budget, per vendor and in total. | Beta | Billing alert configuration |
-| NFR-CST-3 | AI calls have a per-member daily quota and a global monthly spending cap; above the cap, AI logging is paused and manual logging keeps working. | Public | Integration tests |
+| NFR-CST-3 | AI calls are limited to **20 requests per member per day** (reset at the member's local midnight) and a **global cap of $150 per calendar month (UTC)**, part of the NFR-CST-1 budget. When either limit is reached, AI logging pauses with a clear message and manual logging keeps working. | Public | Integration tests |
 | NFR-CST-4 | Cost per monthly active member is reported monthly, so the budget can be re-set before the Coach/Pro launch. | Public | Monthly cost report |
 
 ## 16. Compliance mapping
