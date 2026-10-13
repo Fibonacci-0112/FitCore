@@ -54,13 +54,16 @@ export async function installTapProbe(context) {
     }).observe({ type: 'event', durationThreshold: 16, buffered: true });
     addEventListener('pointerdown', (e) => {
       if (!e.target.closest?.('.add')) return;
+      // A tap's row is the next one after the rows on screen, plus one for each earlier tap still waiting for its
+      // row: two taps before either adds a row (as at the end of a dead zone) get different rows, in order.
       const rows = document.querySelectorAll('li[data-row]').length;
-      m.taps.push({ at: e.timeStamp, rowsBefore: rows, row: null, saved: null, failed: null });
+      const waiting = m.taps.filter((t) => t.slot >= rows).length;
+      m.taps.push({ at: e.timeStamp, slot: rows + waiting, row: null, saved: null, failed: null });
     }, true);
     new MutationObserver(() => {
       const rows = [...document.querySelectorAll('li[data-row]')];
       for (const tap of m.taps) {
-        const row = rows[tap.rowsBefore];
+        const row = rows[tap.slot];
         if (!row) continue;
         if (tap.row === null) { tap.row = -1; requestAnimationFrame(() => (tap.row = performance.now())); }
         if (tap.saved === null && row.dataset.pending === 'false') { tap.saved = -1; requestAnimationFrame(() => (tap.saved = performance.now())); }

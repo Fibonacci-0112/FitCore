@@ -75,35 +75,54 @@ async function run(variant, fault) {
   if (fault.kind === 'restart') server = await startServer(PORT, env);
   const faultEnd = Date.now();
 
-  // After the fault: when can the member add an entry again, and does it save?
-  let recovered = null;
-  let afterSaved = false;
+  // After the fault: when is the page usable again (no reconnect UI, screen ready)? Then let everything in flight
+  // settle for 5 s and count what the tap during the fault left behind, before any other tap can be confused with it.
+  const stats = async () => (await (await fetch(`http://127.0.0.1:${PORT}/api/_stats`)).json()).added;
+  const bananas = () => page.evaluate(() => [...document.querySelectorAll('li[data-row]')].filter((li) => li.textContent.includes('Banana')).length).catch(() => null);
+  let usable = null;
+  for (const deadline = Date.now() + 90_000; Date.now() < deadline; await sleep(100)) {
+    const blocked = await reconnectUi(page).catch(() => 'page navigating');
+    const ready = await page.evaluate(() => performance.getEntriesByName('fitcore-ready').length > 0).catch(() => false);
+    if (!blocked && ready) { usable = Date.now() - faultEnd; break; }
+  }
+  await sleep(5000);
+  const settled = { shown: await bananas(), stored: await stats() };
+  const duringTap = duringRegistered ? (await readTaps(page).catch(() => []))[1] ?? null : null;
+
+  // Then one more tap: does the server store it? (Judged by the server's count: a lost tap leaves the probe waiting
+  // for a row that never comes, so it can't tell which row belongs to the next tap.)
+  let nextSaved = false;
   try {
-    await page.click('.add', { timeout: 60_000 });
-    recovered = Date.now() - faultEnd;
-    await page.waitForFunction(() => { const t = window.__taps.taps.at(-1); return t.saved > 0 || t.failed > 0; }, null, { timeout: 30_000 });
-    afterSaved = await page.evaluate(() => window.__taps.taps.at(-1).saved > 0);
-  } catch { /* stays null / false */ }
+    await page.click('.add', { timeout: 30_000 });
+    for (const deadline = Date.now() + 30_000; Date.now() < deadline && !nextSaved; await sleep(100)) {
+      nextSaved = (await stats()) > settled.stored;
+    }
+  } catch { /* stays false */ }
   await sleep(1500);
   done = true;
   await watch;
 
-  const taps = await readTaps(page).catch(() => []);
-  const during = duringRegistered ? taps[1] : null;
-  const shown = await page.evaluate(() => [...document.querySelectorAll('li[data-row]')].filter((li) => li.textContent.includes('Banana')).length).catch(() => null);
-  const stored = (await (await fetch(`http://127.0.0.1:${PORT}/api/_stats`)).json()).added;
+  const shown = await bananas();
+  const stored = await stats();
+  const attempts = 2 + (duringRegistered ? 1 : 0);
   const finalRenderer = await page.evaluate(() => document.querySelector('[data-renderer]')?.dataset.renderer).catch(() => null);
   await context.close();
   await proxy.close();
   await server.stop();
   rmSync(dir, { recursive: true, force: true });
 
+  // The tap during the fault: what the member saw (from the probe, if the page wasn't reloaded) and whether the
+  // server stored it (one entry was stored before the fault).
+  const seen = !duringRegistered ? 'blocked by the reconnect UI'
+    : duringTap == null ? 'page reloaded'
+    : [duringTap.toRow != null ? `row at ${ms(duringTap.toRow)}` : 'no row', duringTap.failed != null ? `"Not saved" at ${ms(duringTap.failed)}` : duringTap.toSaved != null ? `shown saved at ${ms(duringTap.toSaved)}` : null].filter(Boolean).join(', ');
   const result = {
     variant: variant.name, fault: fault.name, renderer: finalRenderer && finalRenderer !== renderer ? `${renderer} → ${finalRenderer}` : renderer,
-    during: !duringRegistered ? 'blocked by the reconnect UI' : during.failed != null ? `row at ${ms(during.toRow)}, "Not saved" at ${ms(during.failed)}` : during.toSaved != null ? `row at ${ms(during.toRow)}, saved at ${ms(during.toSaved)}` : during.toRow != null ? `row at ${ms(during.toRow)}, never saved` : 'no row',
+    during: duringRegistered ? `${seen}; ${settled.stored >= 2 ? 'stored' : '**not stored**'}` : seen,
     ui: ui.size ? `${[...ui].join(' / ')} (${(uiMs / 1000).toFixed(1)} s)` : 'none',
-    recovered: recovered == null ? 'no' : `${(recovered / 1000).toFixed(1)} s${afterSaved ? '' : ', not saved'}`,
-    reloads, shown, stored,
+    usable: usable == null ? 'not within 90 s' : `${(usable / 1000).toFixed(1)} s`,
+    next: nextSaved ? 'saved' : '**not saved**',
+    reloads, shown, stored, attempts,
   };
   console.error(`${variant.path} ${fault.id}:`, JSON.stringify(result));
   return result;
@@ -122,8 +141,10 @@ console.log('# Faults mid-session\n');
 console.log(`Output of \`node resilience.mjs ${RUNS}\` on ${new Date().toISOString().slice(0, 10)}, ${RUNS} run(s) per row. Each run loads the Today screen through \`proxy.mjs\` (50 ms RTT), saves one entry, starts the fault, taps "Add banana" 1 s into it, and after the fault taps "Add banana" again.\n`);
 console.log('- **Dead zone:** nothing gets through, then everything queued is delivered, as when a phone loses signal and TCP retransmits. **Network switch / offline:** every connection is reset and new ones are refused, as when a phone changes network.');
 console.log('- **Server restart:** the server process stops and a new one starts 3 s later on the same port, as in a deploy. The diary data survives (a file stands in for the database); circuits don\'t. "State in Redis" uses .NET 10 circuit state persistence with a Redis `HybridCache`.');
-console.log('- **Tap during the fault:** what the tap 1 s in did, times from the tap in ms. **Reconnect UI:** what Blazor showed over the page, and for how long.');
-console.log('- **Usable again:** from the end of the fault until the next tap on "Add banana" went through, and whether it saved. **Reloads:** full page reloads. **Bananas shown / stored:** rows on screen at the end against entries the server stored, out of 3 attempts.\n');
-console.log('| Fault | Variant | Renderer | Tap during the fault | Reconnect UI | Usable again | Reloads | Bananas shown / stored |');
-console.log('|---|---|---|---|---|---|---|---|');
-for (const r of rows) console.log(`| ${r.fault} | ${r.variant} | ${r.renderer} | ${r.during} | ${r.ui} | ${r.recovered} | ${r.reloads} | ${r.shown} / ${r.stored} |`);
+console.log('- **Tap during the fault:** what the member saw after the tap 1 s in (times from the tap, in ms), and whether the server had stored it once the page was usable again and 5 s had passed. A tap that landed on the reconnect UI never reached the button.');
+console.log('- **Reconnect UI:** what Blazor showed over the page, and for how long. **Usable again:** from the end of the fault until no reconnect UI covered a ready screen.');
+console.log('- **Next tap:** one more "Add banana" after that, and whether it saved. **Reloads:** full page reloads.');
+console.log('- **Bananas shown / stored / tapped:** rows on screen at the end, entries the server stored, and taps that reached the button.\n');
+console.log('| Fault | Variant | Renderer | Tap during the fault | Reconnect UI | Usable again | Next tap | Reloads | Bananas shown / stored / tapped |');
+console.log('|---|---|---|---|---|---|---|---|---|');
+for (const r of rows) console.log(`| ${r.fault} | ${r.variant} | ${r.renderer} | ${r.during} | ${r.ui} | ${r.usable} | ${r.next} | ${r.reloads} | ${r.shown} / ${r.stored} / ${r.attempts} |`);
