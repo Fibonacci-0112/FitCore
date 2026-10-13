@@ -1,10 +1,10 @@
-# Business Requirements Document: Health, Fitness & Nutrition App
+# Business Requirements Document: FitCore
 
 - **Status:** Draft v1, agreed with the product owner in a section-by-section interview
 - **Date:** 2026-10-12
 - **Related:** [`docs/PLAN.md`](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/PLAN.md) (technical plan for R1) and [`docs/decisions/0002-dotnet-platform.md`](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/decisions/0002-dotnet-platform.md) (platform decision). Both were removed from the repository and are linked at the last commit that had them.
 
-This document gives the business view: who uses the product, what it does, and which rules and integrations it must respect. Where it changes the current technical plan, the change is listed in [§11](#11-impact-on-docsplanmd-follow-ups) instead of being applied silently.
+This document gives the business view: who uses the product, what it does, and which rules and integrations it must respect. Where it departs from the R1 prototype, the change is listed in [§11](#11-changes-from-the-r1-prototype).
 
 ---
 
@@ -209,15 +209,15 @@ The product owner prefers **.NET on every platform**. The full rationale and tra
 6. **Clinician credential verification** method (for example NPI lookup, license checks).
 7. **Approval of decision 0002** (.NET rewrite) and its timing relative to finishing R1.
 
-## 11. Impact on `docs/PLAN.md` (follow-ups)
+## 11. Changes from the R1 prototype
 
-These changes are **not** made in this document's PR. Each becomes its own follow-up.
+The R1 prototype (TypeScript, Expo and Electron, described in the archived [`PLAN.md`](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/PLAN.md)) has been removed from the repository. FitCore must deliver these changes compared with it.
 
-| Area | Current plan | Change required |
+| Area | R1 prototype | Required in FitCore |
 |---|---|---|
-| Platform | Expo + Electron; TypeScript `packages/core`; Deno Edge Function | .NET MAUI Blazor Hybrid + Blazor Web; C# domain library; ASP.NET Core services ([decision 0002](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/decisions/0002-dotnet-platform.md)). Update PLAN.md, AGENTS.md and CLAUDE.md. |
+| Platform | Expo + Electron; TypeScript `packages/core`; Deno Edge Function | .NET MAUI Blazor Hybrid + Blazor Web; C# domain library; ASP.NET Core services ([decision 0002](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/decisions/0002-dotnet-platform.md)) |
 | Authorization | Owner-only RLS | Add a grant model (for example `care_relationships` with scopes, status and audit) and grant-aware policies, with pgTAP tests for grantee and non-grantee access |
 | Targets | Cap at 1%/week; manual targets always win | Soft limits with logged override, a clinician-only hard floor, `targets.set_by` (member, coach, clinician) and an acceptance state |
 | Roles | Members only | Coach, clinician and admin roles; admin catalog curation |
-| Roadmap | R2–R6 | Add the coach workspace, messaging, check-ins, wellness metrics, AI logging, health-platform sync, ED safeguards and payments |
+| Roadmap | R2–R6 | The phases in [§4.1](#41-release-phases), adding the coach workspace, messaging, check-ins, wellness metrics, AI logging, health-platform sync, ED safeguards and payments |
 | Auth | Email/password | Add Google, Microsoft and Apple sign-in |
