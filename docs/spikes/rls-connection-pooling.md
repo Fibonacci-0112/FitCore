@@ -52,10 +52,10 @@ The controls run the same workload without one of the rules. Their counts vary b
 
 | Control | Direct | Session mode | Transaction mode |
 |---|---|---|---|
-| Session-level `SET ROLE` and `set_config(..., false)`, with Npgsql's default reset | Clean: Npgsql's `DISCARD ALL` clears it | Clean | **Breaks**: 16 requests hung, and 5 of 7 probes saw another caller's identity |
+| Session-level `SET ROLE` and `set_config(..., false)`, with Npgsql's default reset | Clean: Npgsql's `DISCARD ALL` clears it | Clean | **Breaks**: 16 requests hung, and 3 of 9 probes saw another caller's identity |
 | Session-level `SET`, with `No Reset On Close=true` | **Leaks**: 400 of 400 probes saw another caller's identity | **Leaks**: 400 of 400 | **Leaks**: 400 of 400 |
-| Safe pattern, with Npgsql's default reset-on-close | Clean | Clean | Breaks: 13 of 38 requests hung and 3 failed |
-| Npgsql auto-prepare (`Max Auto Prepare=20`) | Not tested | Not tested | Breaks: 1,419 of 1,814 requests failed with `42P05 prepared statement "_auto0" already exists` |
+| Safe pattern, with Npgsql's default reset-on-close | Clean | Clean | Breaks: 13 of 40 requests hung and 3 failed |
+| Npgsql auto-prepare (`Max Auto Prepare=20`) | Not tested | Not tested | Breaks: 1,097 of 2,191 requests failed with `42P05 prepared statement "_auto0" already exists` |
 
 Two Supavisor transaction-mode findings matter beyond hangs:
 
@@ -64,15 +64,15 @@ Two Supavisor transaction-mode findings matter beyond hangs:
 
 ### 3.3 Latency
 
-p95 in milliseconds at 8 concurrent callers, 3,000 requests per cell. Everything ran on one 4-core host, so these numbers mostly show client and pooler overhead; network cost is the round-trip count times the API-to-database round-trip time.
+p95 in milliseconds at 8 concurrent callers, 3,000 requests per cell, with each endpoint's recommended settings: Npgsql's default reset on direct and session, `No Reset On Close=true` on transaction mode. Everything ran on one 4-core host, so these numbers mostly show client and pooler overhead; network cost is the round-trip count times the API-to-database round-trip time.
 
 | Strategy | Round trips | Direct read / write | Session read / write | Transaction read / write |
 |---|---|---|---|---|
-| `select 1` baseline | 1 | 1.7 | 1.8 | 3.1 |
-| Round trips | 4 | 7.9 / 10.7 | 8.5 / 7.5 | 8.5 / 8.0 |
-| Batched | 2 | 4.8 / 4.8 | 4.9 / 5.8 | 6.3 / 6.0 |
-| Single trip | 1 | 3.6 / 4.2 | 6.0 / 6.4 | 6.2 / 7.0 |
-| EF Core interceptor | 3 | 7.3 / 10.0 | 9.6 / 9.8 | 8.1 / 10.5 |
+| `select 1` baseline | 1 | 1.3 | 3.2 | 2.2 |
+| Round trips | 4 | 5.8 / 7.3 | 10.6 / 7.8 | 8.4 / 7.7 |
+| Batched | 2 | 3.8 / 4.5 | 7.1 / 7.2 | 6.9 / 6.0 |
+| Single trip | 1 | 3.4 / 5.0 | 7.7 / 7.4 | 6.2 / 7.5 |
+| EF Core interceptor | 3 | 7.5 / 11.4 | 8.9 / 9.0 | 7.7 / 9.0 |
 
 Applying the identity costs one extra statement in the same round trip (single trip), or one extra round trip (batched, EF Core). Even at a 2 ms round-trip time between Fargate and Supabase, the EF Core pattern adds about 4 ms over a bare query, against budgets of 300 ms for reads and 500 ms for writes. Identity handling isn't a latency risk for NFR-PRF-1 or NFR-PRF-2. The 3× load test (NFR-SCL-1) still has to confirm it against the real Supabase project.
 

@@ -47,6 +47,10 @@ public static class Checks
         Add("EfCore: other member sees nothing", efOther.Count == 0, $"{efOther.Count} rows");
         var efGrantee = await EfCoreRls.ReadAsync(ef, CoachActive, Member1);
         Add("EfCore: grantee in scope reads", efGrantee.Count == efOwn.Count, $"{efGrantee.Count} rows");
+        var efOutOfScope = await EfCoreRls.ReadAsync(ef, CoachOtherScope, Member1);
+        Add("EfCore: grantee out of scope sees nothing", efOutOfScope.Count == 0, $"{efOutOfScope.Count} rows");
+        var efRevoked = await EfCoreRls.ReadAsync(ef, CoachRevoked, Member1);
+        Add("EfCore: revoked grantee sees nothing", efRevoked.Count == 0, $"{efRevoked.Count} rows");
         var efInsert = await EfCoreRls.InsertAsync(ef, Member2, Member2);
         Add("EfCore: member writes own diary", efInsert.MemberId == Member2, "1 row");
         var efForged = await ExpectSqlStateAsync(() => EfCoreRls.InsertAsync(ef, Member2, Member1));

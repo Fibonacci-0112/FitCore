@@ -10,7 +10,7 @@ public static class Bench
 
     public static async Task<List<Row>> RunAsync(Endpoint ep, int concurrency, int requests, int warmup)
     {
-        await using var ds = ep.Build(noResetOnClose: true);
+        await using var ds = ep.Build();
         var ef = SpikeDb.Options(ds);
         var rows = new List<Row>();
 
