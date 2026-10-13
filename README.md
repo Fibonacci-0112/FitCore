@@ -71,6 +71,21 @@ The full business requirements are in [`docs/BRD.md`](docs/BRD.md), and the meas
 | Sign-in | Email/password, Google, Microsoft and Sign in with Apple |
 | Distribution | Apple App Store, Google Play, Microsoft Store and the web |
 
+## Quality targets
+
+FitCore is sized for about 10,000 members and 2,000 daily active members in its first public year, with room to grow 10× without a redesign. The full targets, each with an ID and a way to verify it, are in [`docs/NFR.md`](docs/NFR.md).
+
+| Area | Target |
+|---|---|
+| Availability | 99.5% per month; at most 1 hour of data lost in a disaster, service restored within 8 hours |
+| Speed | Server responses p95 ≤ 300 ms (reads) and ≤ 500 ms (writes); food search ≤ 800 ms; Today screen ≤ 1 s warm, ≤ 2.5 s cold |
+| Offline | Workout, diary and weight logging work offline and sync without duplicates |
+| Security | OWASP ASVS 5.0 Level 2; MFA required for clinicians and admins; an independent penetration test before the Public and Coach/Pro launches, with critical and high findings fixed first, then yearly |
+| Privacy | Row-level security tested for every actor; revoking a coach's or clinician's access ends server access on their next request, and data cached on their devices stays readable offline for at most 24 hours; no health data in logs, analytics or push notifications |
+| Data rights | Export within 24 hours; account deletion within 30 days (35 days for backups) |
+| Accessibility | WCAG 2.2 AA on the web; screen readers and text up to 200% on devices |
+| Cost | At most $500/month of infrastructure at launch, with an AI spending cap |
+
 ## Integrations
 
 USDA FoodData Central (beta), with Open Food Facts and a commercial food database planned later. Also planned: an AI vision provider for meal logging, Apple Health and Health Connect, Garmin, Fitbit and Oura, RevenueCat for subscriptions, Stripe Connect for coach billing, push notifications, email, calendar sync, CSV export, and import from MyFitnessPal and similar apps.
@@ -83,4 +98,4 @@ The US market comes first. FitCore follows consumer health privacy law (FTC Heal
 
 ## Open questions
 
-Pricing and tiers, legal and clinical review of the safety values and the product's positioning, food-database and AI vendors, success-metric targets, and clinician credential verification. See [`docs/BRD.md` §10](docs/BRD.md#10-open-questions-and-decisions-needed).
+Pricing and tiers, legal and clinical review of the safety values and the product's positioning, food-database and AI vendors, success-metric targets, clinician credential verification, and legal review of the data-deletion and audit-retention periods and of deleting a coach's comments and plans with the member's account, in [`docs/NFR.md`](docs/NFR.md#17-open-items). See [`docs/BRD.md` §10](docs/BRD.md#10-open-questions-and-decisions-needed).
