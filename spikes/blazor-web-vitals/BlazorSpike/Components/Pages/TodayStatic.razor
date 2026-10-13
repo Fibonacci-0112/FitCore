@@ -1,0 +1,15 @@
+@page "/static"
+@inject IDiaryClient Diary
+
+@* Baseline: static server rendering with no interactivity, the best case for LCP and CLS. *@
+<PageTitle>Today (static SSR)</PageTitle>
+<TodayView Model="model" />
+
+@code {
+    private TodayViewModel? model;
+
+    protected override async Task OnInitializedAsync()
+    {
+        model = new TodayViewModel(await Diary.GetTodayAsync(), Diary);
+    }
+}

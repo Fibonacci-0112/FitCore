@@ -40,3 +40,4 @@ jobs:
           dotnet-version: "10.0.x"
       - run: dotnet build spikes/rls-pooling/RlsSpike
       - run: dotnet build spikes/auth-mfa/AuthSpike
+      - run: dotnet build spikes/blazor-web-vitals/BlazorSpike

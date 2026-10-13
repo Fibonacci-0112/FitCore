@@ -1,0 +1,16 @@
+@page "/wasm-noprerender"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@inject IDiaryClient Diary
+
+@* Control: WebAssembly only. Nothing renders until the runtime has downloaded and started. *@
+<PageTitle>Today (WebAssembly only)</PageTitle>
+<TodayView Model="model" />
+
+@code {
+    private TodayViewModel? model;
+
+    protected override async Task OnInitializedAsync()
+    {
+        model = new TodayViewModel(await Diary.GetTodayAsync(), Diary);
+    }
+}
