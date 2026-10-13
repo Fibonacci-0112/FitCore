@@ -1,6 +1,6 @@
 # Experiments on the slow first tap
 
-Manual runs on 2026-10-13 that found why the first "Add banana" tap was slow on WebAssembly, and what fixes it. They used throwaway variants of `measure/first-tap.mjs`, without network throttling, on the `/wasm` page. Numbers are the click's Event Timing duration in ms; each cell is one or two page loads, so read them as directions, not statistics. `first-tap.md` has the repeatable before-and-after run.
+Manual runs on 2026-10-13 that found why the first "Add banana" tap was slow on WebAssembly, and what fixes it. They used throwaway variants of `measure/first-tap.mjs`, without network throttling, on the `/wasm` page. Numbers are the click's Event Timing duration in ms; each cell is one or two page loads, so read them as directions, not statistics. [`first-tap.md`](first-tap.md) has the repeatable before-and-after run.
 
 ## 1. The first tap is slow, later taps are not
 
@@ -46,3 +46,7 @@ AOT makes later taps a little faster but leaves the first tap as slow, and the p
 ## 4. Build gotcha
 
 Switching between AOT and interpreter builds without deleting `obj/` produced an app that crashed on start (`MONO interpreter: NIY encountered in method System.OutOfMemoryException:.ctor`). AOT strips IL from the assemblies it compiles (`WasmStripILAfterAOT`), and the interpreter build reused the stripped copies from `obj/`. A clean build works. Installing `wasm-tools` also makes every Release publish relink `dotnet.native.wasm`, which saved only 45 KiB here. The published results use the SDK without the workload, as CI does.
+
+## 5. The refetch control flickers
+
+A MutationObserver on `/wasm-nopersist` (Fast 4G) recorded the screen's states from first paint until interactive: prerendered content with 18 rows, then "Loading…" with no rows, then 18 rows again. `/wasm` went straight from the prerendered content to the interactive content. CLS stayed at 0 for both, because content that is removed and added again isn't a layout shift.

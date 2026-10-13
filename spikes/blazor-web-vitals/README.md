@@ -11,7 +11,7 @@ Nothing here is production code. There's no sign-in: the server plays one member
 | `BlazorSpike.Core/` | Stand-in for `FitCore.Domain`, `FitCore.Contracts` and `FitCore.Client.Core`: diary DTOs, lower-bound totals, integer money, and a `TodayViewModel` built on CommunityToolkit.Mvvm, as MAUI would share it |
 | `BlazorSpike.Client/` | Stand-in for `FitCore.Web.Client`: the `TodayView` component, the three WebAssembly pages and an HTTP `IDiaryClient` |
 | `BlazorSpike/` | Stand-in for `FitCore.Web`: the host, the diary API, an in-process `IDiaryClient` for prerendering, and the static SSR and Interactive Server pages |
-| `measure/` | Node scripts: `vitals.mjs` (Playwright and the web-vitals library under throttled profiles), `first-tap.mjs`, `lighthouse.mjs` and `bundle.mjs` |
+| `measure/` | Node scripts: `vitals.mjs` (Playwright and the web-vitals library under throttled profiles), `first-tap.mjs` (taps after start), `early-tap.mjs` (taps while WebAssembly starts), `lighthouse.mjs` and `bundle.mjs` |
 | `results/` | Raw output of the runs the findings quote, and [`experiments.md`](results/experiments.md), the manual runs behind the first-tap fix |
 
 ## Pages
@@ -37,10 +37,11 @@ dotnet publish BlazorSpike -c Release -o publish
 cd measure && npm ci
 node vitals.mjs 5 > ../results/vitals.md          # about 30 minutes
 node lighthouse.mjs 3 > ../results/lighthouse.md
-node first-tap.mjs 5 4 >> ../results/first-tap.md
+node first-tap.mjs 5 4 >> ../results/first-tap.md    # appends one section per build
+node early-tap.mjs 5 > ../results/early-tap.md
 node bundle.mjs ../publish > ../results/bundle.md
 ```
 
 `dotnet publish BlazorSpike -c Release -o publish -p:SpikeNoYield=true` builds the view model without the `Task.Yield()` that fixes the first tap, for comparison. Delete `obj/` and `bin/` before switching between AOT and non-AOT builds ([why](results/experiments.md#4-build-gotcha)).
 
-The CPU slowdown in the scripts is relative to the machine that runs them. The published results ran on a 4-core 2.8 GHz Xeon container; Lighthouse's benchmark index for it is in `results/lighthouse.md`.
+The CPU slowdown in the scripts is relative to the machine that runs them. The published results ran on a 4-core 2.8 GHz Xeon container; Lighthouse's benchmark index for it is in [`lighthouse.md`](results/lighthouse.md).

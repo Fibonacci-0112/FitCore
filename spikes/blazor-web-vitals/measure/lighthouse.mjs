@@ -23,7 +23,7 @@ for (const preset of ['mobile', 'desktop']) {
       const args = ['lighthouse', BASE + path, '--quiet', '--only-categories=performance', '--output=json', `--output-path=${file}`,
         '--chrome-flags=--headless=new --no-sandbox', ...(preset === 'desktop' ? ['--preset=desktop'] : [])];
       const res = spawnSync('npx', args, { env: { ...process.env, CHROME_PATH: CHROME }, stdio: ['ignore', 'ignore', 'inherit'] });
-      if (res.status !== 0) throw new Error(`lighthouse failed for ${preset} ${path}`);
+      if (res.status !== 0) throw new Error(`lighthouse failed for ${preset} ${path}: ${res.error ?? `exit ${res.status}`}`);
       const lhr = JSON.parse(readFileSync(file, 'utf8'));
       version = lhr.lighthouseVersion; benchmark.push(lhr.environment.benchmarkIndex);
       const a = lhr.audits;

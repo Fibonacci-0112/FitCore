@@ -24,7 +24,8 @@ for (const path of PATHS) {
       });
       const page = await context.newPage();
       await (await context.newCDPSession(page)).send('Emulation.setCPUThrottlingRate', { rate: cpu });
-      await fetch(`${BASE}/api/_reset`, { method: 'POST' });
+      const reset = await fetch(`${BASE}/api/_reset`, { method: 'POST' });
+      if (!reset.ok) throw new Error(`_reset failed: HTTP ${reset.status}`);
       await page.goto(BASE + path);
       await page.waitForFunction(() => performance.getEntriesByName('fitcore-ready').length > 0, null, { timeout: 60_000, polling: 50 });
       await page.waitForTimeout(1000);
@@ -39,9 +40,8 @@ for (const path of PATHS) {
   }
 }
 await browser.close();
-console.log(`## ${process.env.BUILD ?? 'Build'}\n`);
+console.log(`\n## ${process.env.BUILD ?? 'Build'}\n`);
 console.log(`Output of \`node first-tap.mjs ${RUNS} ${TAPS}\` on ${new Date().toISOString().slice(0, 10)}: ${RUNS} page loads per row, ${TAPS} taps each, no network throttling. Event Timing duration in ms, median (worst in brackets).\n`);
 console.log('| Variant | CPU slowdown | First tap | Later taps |');
 console.log('|---|---|---|---|');
 for (const r of rows) console.log(`| \`${r.path}\` | ${r.cpu}× | ${Math.round(r.first)} (${Math.round(r.firstMax)}) | ${Math.round(r.later)} (${Math.round(r.laterMax)}) |`);
-console.log();

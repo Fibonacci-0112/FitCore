@@ -71,7 +71,8 @@ async function measure(browser, variant, profile) {
 
   const visit = async () => {
     bytes = { total: 0, framework: 0 };
-    await fetch(`${BASE}/api/_reset`, { method: 'POST' });
+    const reset = await fetch(`${BASE}/api/_reset`, { method: 'POST' });
+    if (!reset.ok) throw new Error(`_reset failed: HTTP ${reset.status}`);
     await page.goto(BASE + variant.path, { waitUntil: 'load', timeout: 120_000 });
     let ready = null;
     if (variant.interactive) {
