@@ -12,7 +12,7 @@ The BRD fixes the platform: .NET MAUI XAML apps and a Blazor Web App on the clie
 The requirements that decide this are:
 
 - **Safety rules enforced on the server.** Soft limits, the clinician-only hard floor, pending coach targets and logged overrides ([BRD §6.2](../BRD.md#62-targets-and-safety)) can't be trusted to clients.
-- **Grant-aware privacy.** RLS on every table, revocation that takes effect on the next request, and a 24-hour limit on offline caches (NFR-PRV-1..4).
+- **Grant-aware privacy.** RLS on every table that holds member data, revocation that takes effect on the next request, and a 24-hour limit on member data cached on a professional's device (NFR-PRV-1..4).
 - **Cross-cutting limits.** Per-member rate limits and AI quotas (NFR-SCL-5, NFR-CST-3), and no health data in logs (NFR-PRV-6).
 - **Stable contracts for released apps.** Old app versions keep working for 90 days (NFR-CMP-5).
 - **One implementation of the rules** (NFR-MNT-1, NFR-MNT-4).
@@ -24,7 +24,7 @@ The requirements that decide this are:
 Build the backend as a **modular monolith on ASP.NET Core (.NET 10 LTS)**, with Supabase as the data, authentication and storage platform.
 
 1. **One deployable, two process types.** A single container image runs as `fitcore-app` (REST API, Blazor host, SignalR; at least two instances) and `fitcore-worker` (outbox dispatch, export, imports, sync, backups). It runs on AWS ECS Fargate in the same region as the Supabase project.
-2. **Strict modules.** Identity, Catalog, Nutrition, Training, Progress, Targets, Care, Sync, Billing, Integrations, DataRights and Audit. Each module owns one Postgres schema and exposes only a contracts surface. Cross-module side effects go through a transactional outbox. Architecture tests enforce the boundaries.
+2. **Strict modules.** Identity, Catalog, Nutrition, Training, Progress, Targets, Care, Sync, Billing, Integrations, DataRights and Audit. Each module owns one Postgres schema of the same name in snake case (`identity`, `catalog`, `nutrition`, `training`, `progress`, `targets`, `care`, `sync`, `billing`, `integrations`, `data_rights`, `audit`) and exposes only a contracts surface. Cross-module side effects go through a transactional outbox. Architecture tests enforce the boundaries.
 3. **Shared rules run on both sides.** `FitCore.Domain` runs on devices for previews and in the API for enforcement.
 4. **The API is the only way in.** Clients use versioned REST (`/v1`) through one typed C# client. The Supabase Data API is disabled for module schemas.
 5. **Two authorization layers.** API policies check roles, entitlements and live grants. Postgres RLS checks again: each request runs as the `authenticated` role with the caller's JWT claims. pgTAP covers the six actors in NFR-PRV-2.
