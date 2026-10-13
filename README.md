@@ -4,7 +4,7 @@ FitCore is a health, fitness and nutrition app. You set targets and track nutrit
 
 It starts as a precise personal tracker you can trust. Over time it grows into a platform where members work with their own coach or clinician without giving up privacy or safety.
 
-The full business requirements are in [`docs/BRD.md`](docs/BRD.md), and the measurable non-functional requirements (availability, performance, security, privacy, cost) are in [`docs/NFR.md`](docs/NFR.md). This README summarizes them.
+The full business requirements are in [`docs/BRD.md`](docs/BRD.md), and the measurable non-functional requirements (availability, performance, security, privacy, cost) are in [`docs/NFR.md`](docs/NFR.md). This README summarizes them. Proposed architecture options and a recommendation are in [`docs/architecture-options.md`](docs/architecture-options.md).
 
 ## Goals the product serves
 
