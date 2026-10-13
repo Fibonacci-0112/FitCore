@@ -101,11 +101,13 @@ The delay comes from a few long tasks of 360 to 500 ms each (at 2× CPU) in whic
 
 ## 4. Verdict
 
-| Target | Result |
+NFR-PRF-8 is a p75 target for real users, so these are lab results. They show whether the design can meet the targets; acceptance needs the real-user data from the beta.
+
+| Target | Lab result |
 |---|---|
-| LCP ≤ 2.5 s (NFR-PRF-8) | **Met** with prerendering on every profile, cold and warm. Not met with WebAssembly only |
-| CLS ≤ 0.1 (NFR-PRF-8) | **Met**: 0.000 everywhere |
-| INP ≤ 200 ms (NFR-PRF-8) | **Met for taps after start**, with rule 5. **At risk for taps during start**: 0.5 to 1.2 s on the mobile profiles |
+| LCP ≤ 2.5 s (NFR-PRF-8) | **Met in the lab** with prerendering on every profile, cold and warm. Not met with WebAssembly only |
+| CLS ≤ 0.1 (NFR-PRF-8) | **Met in the lab**: 0.000 everywhere |
+| INP ≤ 200 ms (NFR-PRF-8) | **Met in the lab for taps after start**, with rule 5. **At risk for taps during start**: 0.5 to 1.2 s on the mobile profiles |
 | Feedback ≤ 100 ms (NFR-PRF-7) | Met on Fast 4G and desktop. The first tap on Slow 4G with 4× CPU takes about 150 ms |
 
 The ADR's design stands: prerender every page, then hydrate with WebAssembly. Interactive Server measured better for taps during start, but per-tab circuits stay ruled out by NFR-SCL-2. The start-up INP risk is recorded as [NFR open item 5](../NFR.md#17-open-items).

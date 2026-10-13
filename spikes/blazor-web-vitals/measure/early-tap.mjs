@@ -43,7 +43,9 @@ for (const profile of PROFILES) {
         await page.goto(BASE + path, { waitUntil: 'commit' });
         await page.waitForSelector('h1', { timeout: 60_000 });
         let taps = 0;
+        const deadline = Date.now() + 120_000;
         while (!(await page.evaluate(() => performance.getEntriesByName('fitcore-ready').length > 0))) {
+          if (Date.now() > deadline) throw new Error(`${path} on ${profile.name} (${cache}) wasn't interactive within 120 s`);
           await page.mouse.click(60, 30); // the "Today" heading: no handler, so only input delay and paint count
           taps++;
           await page.waitForTimeout(250);
