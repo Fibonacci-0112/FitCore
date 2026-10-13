@@ -16,7 +16,16 @@
     <main>
         <Routes />
     </main>
-    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    @* An islands page is plain HTML with its own script, so it doesn't load Blazor at all. *@
+    @if (!HttpContext.Request.Path.StartsWithSegments("/islands"))
+    {
+        <script src="@Assets["_framework/blazor.web.js"]"></script>
+    }
 </body>
 
 </html>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+}
