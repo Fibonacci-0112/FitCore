@@ -18,6 +18,7 @@ The repository is at the requirements and architecture stage. It holds documenta
 | `docs/spikes/` | Spike findings, one file per spike |
 | `spikes/` | Throwaway spike code (.NET 10, Docker Compose or the Supabase CLI, Node for browser checks). Each spike has a README with run instructions. Not production code |
 | `.github/workflows/ci.yml` | CI: Markdown lint, link check and spike build |
+| `.github/skills/code-review/SKILL.md` | GitHub Copilot code-review skill: checklists drawn from the BRD, NFRs, ADRs and spike rules. Update it when those rules change |
 | `.markdownlint-cli2.jsonc` | Markdown lint configuration (MD013 line length is off) |
 
 ## Commands
