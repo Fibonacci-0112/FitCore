@@ -7,6 +7,8 @@ description: Review a FitCore pull request or diff against the BRD, the NFRs, th
 
 FitCore is a multi-user health, fitness and nutrition app where every member's data is private by default. A review here checks a change against the project's written requirements, not only general code quality. Most of the serious defects in this domain are silent: a `0` where a value is unknown, a policy that lets a revoked coach read a diary, a weight in a log line.
 
+This file is also the checklist for the Claude Code skill in [`.claude/skills/fitcore-review/`](../../../.claude/skills/fitcore-review/SKILL.md), which cites its section numbers. Keep the numbering stable, or update that skill in the same PR.
+
 ## 1. Sources of truth
 
 Read the parts of these that the diff touches before you comment. When the diff and a document disagree, the document wins unless the same PR updates it.
