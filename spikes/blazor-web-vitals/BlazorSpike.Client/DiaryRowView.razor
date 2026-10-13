@@ -1,0 +1,15 @@
+@* One diary row. Shared by TodayView and the islands page and fragment. *@
+<li data-row data-pending="@(Saved ? "false" : "true")">
+    <span class="meal">@Entry.Meal</span>
+    <span class="food">@Entry.Food</span>
+    <span class="qty">@Entry.Grams.ToString("0") g</span>
+    <span class="kcal">@(Entry.Kcal is { } k ? $"{k} kcal" : "kcal unknown")</span>
+    <span class="cost">@(Entry.CostMinor is { } c ? Money.Format(c, Entry.Currency) : "no price")</span>
+    @if (Failed) { <span class="failed">Not saved</span> }
+</li>
+
+@code {
+    [Parameter, EditorRequired] public DiaryEntryDto Entry { get; set; } = default!;
+    [Parameter] public bool Saved { get; set; }
+    [Parameter] public bool Failed { get; set; }
+}

@@ -110,7 +110,7 @@ NFR-PRF-8 is a p75 target for real users, so these are lab results. They show wh
 | INP ≤ 200 ms (NFR-PRF-8) | **Met in the lab for taps after start**, with rule 5. **At risk for taps during start**: 0.5 to 1.2 s on the mobile profiles |
 | Feedback ≤ 100 ms (NFR-PRF-7) | Met on Fast 4G and desktop. The first tap on Slow 4G with 4× CPU takes about 150 ms |
 
-The ADR's design stands: prerender every page, then hydrate with WebAssembly. Interactive Server measured better for taps during start, but per-tab circuits stay ruled out by NFR-SCL-2. The start-up INP risk is recorded as [NFR open item 5](../NFR.md#17-open-items).
+The ADR's design stands: prerender every page, then hydrate with WebAssembly. Interactive Server measured better for taps during start, but per-tab circuits stay ruled out by NFR-SCL-2. A later spike found that DevTools throttling doesn't delay WebSocket frames, so this spike's Interactive Server tap times leave out the network; with real latency, every circuit tap waits a full round trip ([web render modes](web-render-modes.md#34-taps-with-real-network-latency)). The start-up INP risk is recorded as [NFR open item 5](../NFR.md#17-open-items).
 
 ## 5. Rules for the build
 

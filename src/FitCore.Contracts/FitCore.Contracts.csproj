@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Versioned request and response DTOs and the typed API client that every client uses (ADR 0003 decision 4, NFR-CMP-5). -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\FitCore.Domain\FitCore.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

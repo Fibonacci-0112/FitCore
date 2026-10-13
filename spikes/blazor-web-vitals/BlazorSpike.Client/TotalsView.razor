@@ -1,0 +1,25 @@
+@* Totals tiles and the incomplete-items note. Shared by TodayView and the islands page and fragment. *@
+<section class="totals" aria-label="Totals">
+    <div class="tile">
+        <span class="label">Energy</span>
+        <span class="value">@(Totals.IncompleteNutrients > 0 ? "≥ " : "")@Totals.KcalAtLeast kcal</span>
+        <span class="sub">of @TargetKcal kcal target</span>
+    </div>
+    <div class="tile">
+        <span class="label">Protein</span>
+        <span class="value">@(Totals.IncompleteNutrients > 0 ? "≥ " : "")@Totals.ProteinAtLeast.ToString("0.#") g</span>
+        <span class="sub">of @TargetProteinG.ToString("0") g target</span>
+    </div>
+    <div class="tile">
+        <span class="label">Estimated food cost</span>
+        <span class="value">@(Totals.MissingCost > 0 ? "≥ " : "")@Money.Format(Totals.CostMinorAtLeast, "USD")</span>
+        <span class="sub">@Totals.MissingCost items without a price</span>
+    </div>
+</section>
+<p class="incomplete">@Totals.IncompleteNutrients items have incomplete nutrients, so totals are a lower bound.</p>
+
+@code {
+    [Parameter, EditorRequired] public NutritionTotals Totals { get; set; } = default!;
+    [Parameter] public int TargetKcal { get; set; }
+    [Parameter] public decimal TargetProteinG { get; set; }
+}

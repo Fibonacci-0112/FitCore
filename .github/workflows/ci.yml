@@ -30,6 +30,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - run: dotnet restore FitCore.slnx
+      - run: dotnet format FitCore.slnx --no-restore --verify-no-changes
+      - run: dotnet build FitCore.slnx --no-restore --configuration Release
+      - run: dotnet test --solution FitCore.slnx --no-build --configuration Release
+
   spikes:
     name: Build spikes
     runs-on: ubuntu-latest

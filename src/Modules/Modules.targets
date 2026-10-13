@@ -1,0 +1,9 @@
+<Project>
+
+  <!-- Imported by the hosts (FitCore.Web and FitCore.Worker): references every module and compiles the shared module list. -->
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)FitCore.Modules.*\FitCore.Modules.*.csproj" />
+    <Compile Include="$(MSBuildThisFileDirectory)ModuleCatalog.cs" Link="ModuleCatalog.cs" />
+  </ItemGroup>
+
+</Project>

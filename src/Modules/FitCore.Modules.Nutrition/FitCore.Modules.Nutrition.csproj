@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Diary, snapshots, recipes, saved meals, planner, groceries and purchases. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\FitCore.Domain\FitCore.Domain.csproj" />
+    <ProjectReference Include="..\..\FitCore.Platform\FitCore.Platform.csproj" />
+  </ItemGroup>
+
+</Project>
