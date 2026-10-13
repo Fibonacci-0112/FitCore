@@ -29,7 +29,7 @@ Pick the target from the request:
 |---|---|
 | Nothing named | `git diff origin/main...HEAD`, plus uncommitted changes (`git diff HEAD`) and untracked files (`git ls-files --others --exclude-standard`) |
 | A branch | `git diff origin/main...<branch>` |
-| A PR number | `gh pr diff <number>`, `gh pr view <number> --comments` for the conversation, and `gh api repos/{owner}/{repo}/pulls/<number>/comments` for inline review comments, if `gh` is installed and signed in; otherwise ask for the branch name |
+| A PR number | `gh pr diff <number>`, `gh pr view <number> --comments` for the conversation, and `gh api --paginate repos/{owner}/{repo}/pulls/<number>/comments` for inline review comments, if `gh` is installed and signed in; otherwise ask for the branch name |
 | A path | The current content of that path, reviewed as a whole |
 
 Run `git fetch origin main` first so the base is current. List the changed and untracked files, then read each one in full, not only the hunks: a rule break often sits in unchanged lines that the change now reaches.
