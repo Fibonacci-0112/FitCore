@@ -80,8 +80,8 @@ FitCore is sized for about 10,000 members and 2,000 daily active members in its 
 | Availability | 99.5% per month; at most 1 hour of data lost in a disaster, service restored within 8 hours |
 | Speed | Server responses p95 ≤ 300 ms (reads) and ≤ 500 ms (writes); food search ≤ 800 ms; Today screen ≤ 1 s warm, ≤ 2.5 s cold |
 | Offline | Workout, diary and weight logging work offline and sync without duplicates |
-| Security | OWASP ASVS 5.0 Level 2; MFA required for clinicians and admins; a penetration test before the Public and Coach/Pro launches |
-| Privacy | Row-level security tested for every actor; revoked access ends on the next request; no health data in logs, analytics or push notifications |
+| Security | OWASP ASVS 5.0 Level 2; MFA required for clinicians and admins; an independent penetration test before the Public and Coach/Pro launches, with critical and high findings fixed first, then yearly |
+| Privacy | Row-level security tested for every actor; revoking a coach's or clinician's access ends server access on their next request, and data cached on their devices stays readable offline for at most 24 hours; no health data in logs, analytics or push notifications |
 | Data rights | Export within 24 hours; account deletion within 30 days (35 days for backups) |
 | Accessibility | WCAG 2.2 AA on the web; screen readers and text up to 200% on devices |
 | Cost | At most $500/month of infrastructure at launch, with an AI spending cap |
@@ -98,4 +98,4 @@ The US market comes first. FitCore follows consumer health privacy law (FTC Heal
 
 ## Open questions
 
-Pricing and tiers, legal and clinical review of the safety values and the product's positioning, food-database and AI vendors, success-metric targets, clinician credential verification, and legal review of the data-deletion and audit-retention periods in [`docs/NFR.md`](docs/NFR.md#17-open-items). See [`docs/BRD.md` §10](docs/BRD.md#10-open-questions-and-decisions-needed).
+Pricing and tiers, legal and clinical review of the safety values and the product's positioning, food-database and AI vendors, success-metric targets, clinician credential verification, and legal review of the data-deletion and audit-retention periods and of deleting a coach's comments and plans with the member's account, in [`docs/NFR.md`](docs/NFR.md#17-open-items). See [`docs/BRD.md` §10](docs/BRD.md#10-open-questions-and-decisions-needed).
