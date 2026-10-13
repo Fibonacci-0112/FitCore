@@ -61,9 +61,11 @@ The full business requirements are in [`docs/BRD.md`](docs/BRD.md). This README 
 
 ## Platform
 
+.NET on every platform is accepted. The device apps use native .NET MAUI XAML for the most native feel, and the web uses Blazor.
+
 | Area | Choice |
 |---|---|
-| Clients | iOS, Android, Windows, macOS and web, all on .NET: .NET MAUI Blazor Hybrid apps and a Blazor Web App sharing one Razor component library |
+| Clients | iOS, Android, Windows, macOS and web, all on .NET: native .NET MAUI XAML apps on devices and a Blazor Web App on the web, sharing view models and the domain library |
 | Domain logic | A shared C# library for units, nutrition totals, estimated cost, targets and guardrails |
 | Backend | Supabase (Postgres, Auth, Storage, row-level security) plus ASP.NET Core services |
 | Sign-in | Email/password, Google, Microsoft and Sign in with Apple |
