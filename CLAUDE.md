@@ -31,11 +31,12 @@ lychee --include-fragments '**/*.md'           # https://lychee.cli.rs
 
 Use the pinned linter version: newer markdownlint releases add rules (such as MD060) that CI doesn't run, and that flag the existing files.
 
-Spike code needs the .NET 10 SDK. CI builds it; running a spike needs Docker (see its README):
+Spike code needs the .NET 10 SDK. CI builds it. Running the RLS and auth spikes needs Docker; the Blazor spike needs Node 22 and a Chromium build instead (see each README):
 
 ```sh
 dotnet build spikes/rls-pooling/RlsSpike
 dotnet build spikes/auth-mfa/AuthSpike
+dotnet build spikes/blazor-web-vitals/BlazorSpike
 ```
 
 ## Platform and architecture
