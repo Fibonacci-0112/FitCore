@@ -6,7 +6,7 @@ Guidance for Claude Code in this repository. Read the BRD and the NFRs before an
 
 FitCore is a health, fitness and nutrition app. Members plan targets and track nutrition (including estimated food cost), training, body metrics and wellness, with optional support from a coach or clinician. It's multi-user from day one, and every member's data is private by default.
 
-The repository is at the requirements and architecture stage. It holds documentation and throwaway spike code under `spikes/`; no application code exists yet.
+The repository holds the requirements and architecture documents, throwaway spike code under `spikes/`, and the start of the application: the solution scaffold from [`architecture-options.md` §B.2](docs/architecture-options.md#b2-project-structure-and-boundaries). The projects build and the architecture tests run, but no features exist yet.
 
 | Path | Contents |
 |---|---|
@@ -17,7 +17,19 @@ The repository is at the requirements and architecture stage. It holds documenta
 | `docs/decisions/` | Architecture decision records (ADRs), numbered `NNNN-title.md` |
 | `docs/spikes/` | Spike findings, one file per spike |
 | `spikes/` | Throwaway spike code (.NET 10, Docker Compose or the Supabase CLI, Node for browser checks). Each spike has a README with run instructions. Not production code |
-| `.github/workflows/ci.yml` | CI: Markdown lint, link check and spike build |
+| `FitCore.slnx` | The solution: everything under `src/` and `tests/` |
+| `src/FitCore.Domain/` | Shared rules (BRD §6). No I/O and no references |
+| `src/FitCore.Contracts/` | Versioned DTOs and the typed API client (`/v1`) |
+| `src/FitCore.Client.Core/` | View models, offline store and sync engine, shared by the MAUI app and the Blazor client |
+| `src/FitCore.Platform/` | Cross-cutting server code: the `IModule` host, and later auth, the RLS session, rate limits and redacted logging |
+| `src/FitCore.Web/` | `fitcore-app`: Blazor Web App host, `/v1` API and `/health` |
+| `src/FitCore.Web.Client/` | Blazor WebAssembly pages, prerendered by `FitCore.Web` |
+| `src/FitCore.Worker/` | `fitcore-worker`: background host |
+| `src/Modules/` | One project per module in ADR 0003, each with a `<Name>Module` entry point. `Modules.targets` and `ModuleCatalog.cs` load every module into both hosts |
+| `tests/FitCore.Architecture.Tests/` | Module boundaries and project layering (NFR-MNT-4) |
+| `tests/FitCore.Web.Tests/` | The web host's pipeline, in memory: API errors as problem details, `no-store` pages, prerendering |
+| `Directory.Build.props`, `Directory.Packages.props` | Shared build settings (warnings are errors) and central package versions. `spikes/` opts out of both |
+| `.github/workflows/ci.yml` | CI: Markdown lint, link check, solution format check, build and test, and spike build |
 | `.github/skills/code-review/SKILL.md` | GitHub Copilot code-review skill: checklists drawn from the BRD, NFRs, ADRs and spike rules. Update it when those rules change. It is also the checklist for the Claude Code skill below |
 | `.claude/skills/fitcore-review/SKILL.md` | Claude Code review skill (`/fitcore-review`): runs the Copilot skill's checklist with local checks and verified findings |
 | `.markdownlint-cli2.jsonc` | Markdown lint configuration (MD013 line length is off) |
@@ -33,7 +45,16 @@ lychee --include-fragments '**/*.md'           # https://lychee.cli.rs
 
 Use the pinned linter version: newer markdownlint releases add rules (such as MD060) that CI doesn't run, and that flag the existing files.
 
-Spike code needs the .NET 10 SDK. CI builds it. Running the RLS and auth spikes needs Docker; the Blazor spike needs Node 22 and a Chromium build instead (see each README):
+The solution needs the .NET 10 SDK (`global.json`). CI runs these, and a PR must pass them:
+
+```sh
+dotnet format FitCore.slnx --verify-no-changes   # formatting and code style (.editorconfig)
+dotnet build FitCore.slnx                        # warnings are errors
+dotnet test --solution FitCore.slnx              # Microsoft.Testing.Platform runner, set in global.json
+dotnet run --project src/FitCore.Web             # the web app and API, https://localhost:7180
+```
+
+Spike code also needs the .NET 10 SDK. CI builds it. Running the RLS and auth spikes needs Docker; the Blazor spike needs Node 22 and a Chromium build instead (see each README):
 
 ```sh
 dotnet build spikes/rls-pooling/RlsSpike
@@ -51,7 +72,14 @@ dotnet build spikes/blazor-web-vitals/BlazorSpike
 - **Sign-in:** email/password, Google, Microsoft and Sign in with Apple, through Supabase Auth.
 - **MFA:** TOTP, offered to everyone and required for clinicians and admins. "Required" is enforced in the API and in RLS by checking `aal2`, since Supabase has no per-role switch. Passkey sign-in counts as a single factor ([spike findings](docs/spikes/apple-sign-in-and-mfa.md#4-rules-for-the-build)).
 
-When code is added, update this file with the layout and the commands to build, test and lint it, and extend CI to run them.
+### Solution rules
+
+- **Modules** expose only their `<Name>Module` class (an `IModule`) and types in the `FitCore.Modules.<Name>.Contracts` namespace. Everything else is `internal`. `InternalsVisibleTo` is allowed only for the module's own test project. The architecture tests enforce this.
+- **A new module** needs an ADR change first, then a project under `src/Modules/` and an entry in `ModuleCatalog.cs`. Its schema is its name in snake case.
+- **Client projects** (`FitCore.Domain`, `FitCore.Contracts`, `FitCore.Client.Core`, `FitCore.Web.Client`) never reference modules, `FitCore.Platform`, the hosts or Npgsql.
+- **Package versions** go in `Directory.Packages.props`, never in a project file.
+
+When code is added, keep this file's layout and commands current, and extend CI to run any new checks.
 
 ## Business rules (do not break)
 

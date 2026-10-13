@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <!-- The fitcore-worker process: outbox dispatch, export, imports, sync and backups (ADR 0003 decision 1). -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\FitCore.Platform\FitCore.Platform.csproj" />
+  </ItemGroup>
+
+  <Import Project="..\Modules\Modules.targets" />
+
+</Project>

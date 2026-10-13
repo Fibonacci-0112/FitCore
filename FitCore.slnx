@@ -1,0 +1,29 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FitCore.Client.Core/FitCore.Client.Core.csproj" />
+    <Project Path="src/FitCore.Contracts/FitCore.Contracts.csproj" />
+    <Project Path="src/FitCore.Domain/FitCore.Domain.csproj" />
+    <Project Path="src/FitCore.Platform/FitCore.Platform.csproj" />
+    <Project Path="src/FitCore.Web.Client/FitCore.Web.Client.csproj" />
+    <Project Path="src/FitCore.Web/FitCore.Web.csproj" />
+    <Project Path="src/FitCore.Worker/FitCore.Worker.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/">
+    <Project Path="src/Modules/FitCore.Modules.Audit/FitCore.Modules.Audit.csproj" />
+    <Project Path="src/Modules/FitCore.Modules.Billing/FitCore.Modules.Billing.csproj" />
+    <Project Path="src/Modules/FitCore.Modules.Care/FitCore.Modules.Care.csproj" />
+    <Project Path="src/Modules/FitCore.Modules.Catalog/FitCore.Modules.Catalog.csproj" />
+    <Project Path="src/Modules/FitCore.Modules.DataRights/FitCore.Modules.DataRights.csproj" />
+    <Project Path="src/Modules/FitCore.Modules.Identity/FitCore.Modules.Identity.csproj" />
+    <Project Path="src/Modules/FitCore.Modules.Integrations/FitCore.Modules.Integrations.csproj" />
+    <Project Path="src/Modules/FitCore.Modules.Nutrition/FitCore.Modules.Nutrition.csproj" />
+    <Project Path="src/Modules/FitCore.Modules.Progress/FitCore.Modules.Progress.csproj" />
+    <Project Path="src/Modules/FitCore.Modules.Sync/FitCore.Modules.Sync.csproj" />
+    <Project Path="src/Modules/FitCore.Modules.Targets/FitCore.Modules.Targets.csproj" />
+    <Project Path="src/Modules/FitCore.Modules.Training/FitCore.Modules.Training.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FitCore.Architecture.Tests/FitCore.Architecture.Tests.csproj" />
+    <Project Path="tests/FitCore.Web.Tests/FitCore.Web.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Shared rules: units, nutrition totals, estimated cost, targets and guardrails (BRD §6).
+    Runs on devices and in the API, so it has no I/O and no package or project references (NFR-MNT-1, NFR-MNT-4).
+  -->
+
+</Project>

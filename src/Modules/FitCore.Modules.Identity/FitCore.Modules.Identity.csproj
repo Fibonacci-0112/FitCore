@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Profile, age gate, roles and consents (NFR-PRV-7). -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\FitCore.Domain\FitCore.Domain.csproj" />
+    <ProjectReference Include="..\..\FitCore.Platform\FitCore.Platform.csproj" />
+  </ItemGroup>
+
+</Project>
