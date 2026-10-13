@@ -1,6 +1,7 @@
 # Architecture Options: FitCore
 
 - **Status:** Proposal v2, for a decision by the product owner. Revised against the measurable NFRs in [`NFR.md`](NFR.md).
+- **Decision record:** [ADR 0003](decisions/0003-modular-monolith.md) (proposed)
 - **Date:** 2026-10-13
 - **Input:** [`BRD.md`](BRD.md) (especially [§3](BRD.md#3-permissions), [§5](BRD.md#5-platform-and-technology-constraints), [§6](BRD.md#6-business-rules) and [§7](BRD.md#7-compliance-and-constraints)) and [`NFR.md`](NFR.md)
 
