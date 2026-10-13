@@ -81,4 +81,4 @@ The US market comes first. FitCore follows consumer health privacy law (FTC Heal
 
 ## Open questions
 
-Pricing and tiers, legal and clinical review of the safety values and the product's positioning, food-database and AI vendors, success-metric targets, clinician credential verification, and approval of the .NET platform decision. See [`docs/BRD.md` §10](docs/BRD.md#10-open-questions-and-decisions-needed).
+Pricing and tiers, legal and clinical review of the safety values and the product's positioning, food-database and AI vendors, success-metric targets, and clinician credential verification. See [`docs/BRD.md` §10](docs/BRD.md#10-open-questions-and-decisions-needed).
