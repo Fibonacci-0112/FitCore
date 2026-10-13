@@ -61,9 +61,9 @@ Don't report a finding you can't tie to a concrete failure or a written rule. Do
 
 - **Permission matrix.** Professionals reach member data only through an active grant and its scopes, with exactly the access in [BRD §3.2](../../../docs/BRD.md#32-permission-matrix) (NFR-PRV-3). They write only targets, assigned plans, comments, messages and check-in responses. Clinicians read workouts but don't assign them. Progress photos need an explicit photo scope.
 - **Revocation** takes effect on the professional's next request; no cached grant decision may outlive it (NFR-PRV-4). Offline copies on a professional's device expire 24 hours after the last grant check.
-- **Admins** have no path to diaries, measurements, photos, wellness data or messages, including through support tools and logs (NFR-PRV-5). Admin analytics are aggregate and anonymized only.
+- **Admins and support staff** have no path to diaries, measurements, photos, wellness data or messages, including through support tools, logs and backups in normal operation (NFR-PRV-5). Support runs export and deletion on a verified request without seeing diary content (NFR-DAT-6). Admin analytics are aggregate and anonymized only.
 - **No health data** (foods, nutrients, weights, measurements, wellness values, photos, messages, conditions) in analytics events, logs, crash reports, exception messages, validation messages or push payloads (NFR-PRV-6). Check string interpolation in `throw`, `ILogger` calls, telemetry properties and web-vitals payloads.
-- **Audit.** Grant changes, professional writes to member data, guardrail overrides and acceptances, admin catalog changes, support-run exports and deletions, and admin sign-ins write to the append-only audit log, with actor, actor role, member, action, UTC time and before/after values (NFR-AUD-1, NFR-AUD-2). Nothing may update or delete audit rows (NFR-AUD-3).
+- **Audit.** Grant changes, professional writes to member data, guardrail overrides and acceptances, admin catalog changes, support-run exports and deletions, and admin sign-ins write to the append-only audit log, with actor, actor role, member, action, UTC time and before/after values (NFR-AUD-1, NFR-AUD-2). No user, including admins, can edit or delete audit entries through the app or API (NFR-AUD-3). The only permitted change is the retention job's pseudonymization after account deletion (NFR-DAT-4). Members can view the entries about their own data (NFR-AUD-4).
 - **Hide-numbers mode** removes calorie and weight figures on every surface, including notifications and coach messages (NFR-ACC-5).
 - **Consent** for health data, sharing and AI photo processing is recorded separately and can be withdrawn (NFR-PRV-7). No location data (NFR-PRV-8).
 
@@ -97,7 +97,7 @@ Don't report a finding you can't tie to a concrete failure or a written rule. Do
 ### 4.6 Clients: shared code, Blazor and MAUI
 
 - **No business logic in UI code** (NFR-MNT-4). Calculations of totals, costs, units, targets or guardrails in XAML code-behind, Razor components or view models belong in `FitCore.Domain` or the server.
-- **Parity.** A feature lands on both the MAUI XAML UI and the Blazor UI, or the PR records the gap with a date (NFR-CMP-3). View models and service clients are shared, not duplicated per UI.
+- **Parity.** A feature lands on both the MAUI XAML UI and the Blazor UI, or the gap is recorded in the release notes with a date (NFR-CMP-3). View models and service clients are shared, not duplicated per UI.
 - **Blazor rendering.** Every page prerenders on the server and hydrates with WebAssembly. Flag WebAssembly-only routes, `InteractiveServer` and `InteractiveAuto`. Prerendered data is carried by `[PersistentState]`.
 - **Member-data pages** send `Cache-Control: no-store`.
 - **"Today"** on the server comes from the member's profile time zone, never the server clock or the browser.
