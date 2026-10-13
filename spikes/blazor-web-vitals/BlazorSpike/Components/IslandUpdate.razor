@@ -1,5 +1,5 @@
 @* The fragment the island swaps in after a save: new totals and the saved row, rendered with the same components. *@
-<div id="totals">
+<div id="totals" data-entries="@Day.Entries.Count">
     <TotalsView Totals="NutritionTotals.Sum(Day.Entries)" TargetKcal="Day.TargetKcal" TargetProteinG="Day.TargetProteinG" />
 </div>
 <DiaryRowView Entry="Added" Saved="true" />

@@ -3,6 +3,8 @@
 const button = document.querySelector('[data-island-add]');
 const list = document.querySelector('.diary');
 const pending = document.getElementById('pending-row');
+// Saves run in parallel, and their responses can arrive in any order. Each response's totals cover the entries the
+// server had stored by then (data-entries), so only totals covering more entries replace what's on screen.
 
 button.addEventListener('click', async () => {
   // The client generates the ID, so a retry is idempotent, as in TodayViewModel.
@@ -18,7 +20,9 @@ button.addEventListener('click', async () => {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const html = document.createElement('template');
     html.innerHTML = await res.text();
-    document.getElementById('totals').replaceWith(html.content.getElementById('totals'));
+    const current = document.getElementById('totals');
+    const next = html.content.getElementById('totals');
+    if (Number(next.dataset.entries) > Number(current.dataset.entries)) current.replaceWith(next);
     row.replaceWith(html.content.querySelector('li[data-row]'));
   } catch {
     row.append(Object.assign(document.createElement('span'), { className: 'failed', textContent: 'Not saved' }));
