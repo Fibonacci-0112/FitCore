@@ -1,0 +1,43 @@
+@page "/islands"
+@using System.Text.Json
+@inject IDiaryClient Diary
+
+@*
+    Static server rendering with one JavaScript island: no circuit and no WebAssembly. The page is plain HTML.
+    islands/today.js adds a pending row on tap, posts the entry, and swaps in the totals and row the server renders.
+    The totals are still computed in C# (NutritionTotals), on the server.
+*@
+<PageTitle>Today (static SSR with a JavaScript island)</PageTitle>
+
+<h1>Today</h1>
+<span hidden data-renderer="Island" data-interactive="false"></span>
+<div id="totals">
+    <TotalsView Totals="totals" TargetKcal="day.TargetKcal" TargetProteinG="day.TargetProteinG" />
+</div>
+
+<button class="add" data-island-add data-date="@day.Date.ToString("yyyy-MM-dd")" data-entry="@entryJson" disabled>Add banana</button>
+
+<ol class="diary">
+    @foreach (var e in day.Entries)
+    {
+        <DiaryRowView @key="e.Id" Entry="e" Saved="true" />
+    }
+</ol>
+
+<template id="pending-row"><DiaryRowView Entry="Banana" /></template>
+<script type="module" src="@Assets["islands/today.js"]"></script>
+
+@code {
+    // The quick-add food, as TodayViewModel adds it. The island sets a new ID on each tap.
+    private static readonly DiaryEntryDto Banana = new(Guid.Empty, "Banana, raw", "Snack", 118m, 105, 1.3m, 25, "USD");
+    private static readonly string entryJson = JsonSerializer.Serialize(Banana, DiaryJson.Default.DiaryEntryDto);
+
+    private DiaryDayDto day = default!;
+    private NutritionTotals totals = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        day = await Diary.GetTodayAsync();
+        totals = NutritionTotals.Sum(day.Entries);
+    }
+}
