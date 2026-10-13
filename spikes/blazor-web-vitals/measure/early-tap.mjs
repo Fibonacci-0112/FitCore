@@ -11,8 +11,7 @@ const PROFILES = [
   { name: 'Slow 4G, 4x CPU', latency: 562.5, down: 1474.56e3 / 8, up: 675e3 / 8, cpu: 4 },
   { name: 'Fast 4G, 2x CPU', latency: 150, down: 9e6 / 8, up: 1.5e6 / 8, cpu: 2 },
 ];
-// PATHS=/wasm,/server,/auto,/islands node early-tap.mjs ... picks the variants (default: the original two).
-const PATHS = (process.env.PATHS ?? '/wasm,/server').split(',');
+const PATHS = ['/wasm', '/server'];
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
 /** Returns the sorted sample at percentile fraction p (0–1), or null for an empty sample. */
@@ -28,8 +27,6 @@ for (const profile of PROFILES) {
           const primer = await context.newPage();
           await primer.goto(BASE + path);
           await primer.waitForFunction(() => performance.getEntriesByName('fitcore-ready').length > 0, null, { timeout: 120_000 });
-          // /auto switches to WebAssembly on a return visit only once the first visit has downloaded it.
-          if (path === '/auto') await primer.waitForFunction(() => Object.keys(localStorage).some((k) => k.startsWith('blazor-resource-hash')), null, { timeout: 120_000 });
           await primer.close();
         }
         await context.addInitScript(() => {

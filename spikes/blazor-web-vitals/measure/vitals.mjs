@@ -17,9 +17,7 @@ const VARIANTS = [
   { path: '/wasm-nopersist', name: 'WebAssembly, prerendered, refetch on start', interactive: true },
   { path: '/wasm-noprerender', name: 'WebAssembly only, no prerendering', interactive: true },
   { path: '/server', name: 'Interactive Server (reference)', interactive: true },
-  { path: '/auto', name: 'Interactive Auto', interactive: true },
-  { path: '/islands', name: 'Static SSR + JS island', interactive: true },
-].filter((v) => !process.env.PATHS || process.env.PATHS.split(',').includes(v.path)); // PATHS=/auto,/islands picks variants
+];
 
 // Bytes per second. "Slow 4G" is Lighthouse's mobile profile as DevTools applies it
 // (150 ms RTT x 3.75, 1.6 Mbps x 0.9), the harshest common lab profile.
@@ -83,7 +81,6 @@ async function measure(browser, variant, profile) {
       await page.waitForFunction(() => performance.getEntriesByName('fitcore-ready').length > 0, null, { timeout: 120_000, polling: 50 });
       ready = await page.evaluate(() => performance.getEntriesByName('fitcore-ready')[0].startTime);
     }
-    const renderer = await page.evaluate(() => document.querySelector('[data-renderer]')?.dataset.renderer ?? null);
     await page.waitForTimeout(500); // let late layout shifts and LCP candidates land
     let tap = {};
     if (variant.interactive) {
@@ -101,7 +98,7 @@ async function measure(browser, variant, profile) {
     }
     const m = await page.evaluate(() => window.__m);
     const reads = (await (await fetch(`${BASE}/api/_stats`)).json()).todayReads;
-    return { lcp: m.lcp, cls: m.cls, fcp: m.fcp, ttfb: m.ttfb, ready, renderer, ...tap, bytes: { ...bytes }, reads };
+    return { lcp: m.lcp, cls: m.cls, fcp: m.fcp, ttfb: m.ttfb, ready, ...tap, bytes: { ...bytes }, reads };
   };
 
   const cold = await visit();
@@ -146,7 +143,6 @@ for (const profile of PROFILES) {
         toSaved: median(pick((x) => x.toSaved)),
         kb: median(pick((x) => x.bytes.total)), fwKb: median(pick((x) => x.bytes.framework)),
         reads: median(pick((x) => x.reads)),
-        renderers: [...new Set(pick((x) => x.renderer))].join(', '),
       });
       console.error(`${profile.id} ${variant.path} ${cache}: LCP ${ms(rows.at(-1).lcp)} ready ${ms(rows.at(-1).ready)} tap ${ms(rows.at(-1).event)}/${ms(rows.at(-1).toRow)}`);
     }
@@ -161,10 +157,9 @@ console.log('- **LCP, CLS:** from the web-vitals library, measured up to the fir
 console.log('- **Ready:** when the Today screen shows data and accepts taps (a `performance.mark` from the component).');
 console.log('- **Tap event:** duration of the "Add banana" tap from Event Timing, the number INP is built from.');
 console.log('- **Tap to row:** from the tap to the frame that shows the new row (NFR-PRF-7, ≤ 100 ms). **Saved:** to the frame that shows it confirmed.');
-console.log('- **Reads:** how many times the page read "today" from the diary (prerender plus client).');
-console.log('- **Renderer:** what ran the page once it was interactive. DevTools throttling doesn\'t delay WebSocket frames, so taps on a circuit (Server) show no network time here; see `latency.md`.\n');
-console.log('| Profile | Variant | Cache | Renderer | LCP | CLS | FCP | Ready | Tap event | Tap to row | Saved | KiB | of which `_framework` | Reads |');
-console.log('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
+console.log('- **Reads:** how many times the page read "today" from the diary (prerender plus client).\n');
+console.log('| Profile | Variant | Cache | LCP | CLS | FCP | Ready | Tap event | Tap to row | Saved | KiB | of which `_framework` | Reads |');
+console.log('|---|---|---|---|---|---|---|---|---|---|---|---|---|');
 for (const r of rows) {
-  console.log(`| ${r.profile} | ${r.variant} | ${r.cache} | ${r.renderers} | ${ms(r.lcp)} (${ms(r.lcpMax)}) | ${cls(r.cls)} (${cls(r.clsMax)}) | ${ms(r.fcp)} | ${ms(r.ready)} | ${ms(r.event)} (${ms(r.eventMax)}) | ${ms(r.toRow)} (${ms(r.toRowMax)}) | ${ms(r.toSaved)} | ${kb(r.kb)} | ${kb(r.fwKb)} | ${r.reads} |`);
+  console.log(`| ${r.profile} | ${r.variant} | ${r.cache} | ${ms(r.lcp)} (${ms(r.lcpMax)}) | ${cls(r.cls)} (${cls(r.clsMax)}) | ${ms(r.fcp)} | ${ms(r.ready)} | ${ms(r.event)} (${ms(r.eventMax)}) | ${ms(r.toRow)} (${ms(r.toRowMax)}) | ${ms(r.toSaved)} | ${kb(r.kb)} | ${kb(r.fwKb)} | ${r.reads} |`);
 }
