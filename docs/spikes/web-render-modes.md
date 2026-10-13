@@ -85,15 +85,17 @@ Saving takes about RTT + 90 ms for the circuit and the island, and about RTT + 1
 
 ### 3.5 Faults mid-session
 
+Each run taps once during the fault, waits until the page is usable again plus 5 s, and only then asks the server whether that tap was stored, so the next tap can't be mistaken for it.
+
 | Fault | WebAssembly and JavaScript island | Interactive Server and Interactive Auto (first visit) |
 |---|---|---|
-| Dead zone, 10 s | Row at once; saved when the signal returns | No row for 9 s, then the row and the save |
-| Dead zone, 45 s | Row at once; saved when the signal returns | "Rejoining the server..." for 15 s. **The tap made during the dead zone was lost**: no row, nothing stored |
-| Network switch, offline 3 s | Row at once, then "Not saved" | Page covered by "Rejoining the server..." / "Rejoin failed... trying again in 5 seconds"; the tap can't land. Usable 2.5 s after the network returns |
-| Offline 30 s, circuit kept 10 s | Row at once, then "Not saved" | Covered for 30 s. Usable 0.4 s after the network returns, with the screen intact: .NET 10 restored the evicted circuit from its persisted state |
-| Server restart or crash | Row at once, then "Not saved"; usable at once | Covered for about 5 s, then **a full page reload**. The same with circuit state in Redis: persistence covers an evicted or paused circuit, not one whose server process is gone |
+| Dead zone, 10 s | Row at once; stored when the signal returns | No row for 9 s, then the row; stored |
+| Dead zone, 45 s | Row at once; stored when the signal returns | "Rejoining the server..." for 15 s. **The tap during the dead zone never showed a row and was never stored.** The next tap after the dead zone saved |
+| Network switch, offline 3 s | Row at once, then "Not saved" | The page is covered by "Rejoining the server..." and "Rejoin failed... trying again in 5 seconds", so the tap can't reach the button. Interactive Server is usable 2.3 s after the network returns. Interactive Auto keeps Blazor's error banner on screen afterwards, though taps work again |
+| Offline 30 s, circuit kept 10 s | Row at once, then "Not saved" | Covered for 30 s. Interactive Server is usable 0.4 s after the network returns, with the screen intact: .NET 10 restored the evicted circuit from its persisted state. Interactive Auto again keeps the error banner |
+| Server restart or crash | Row at once, then "Not saved"; usable at once | Covered for about 5 s, then **a full page reload**, usable about 2.4 s after the server is back. The same with circuit state in Redis: persistence covers an evicted or paused circuit, not one whose server process is gone |
 
-Nothing that was saved was ever lost, in any variant. The "Not saved" rows show that the spike's WebAssembly and island code doesn't retry; production code would queue and retry with the client-generated ID, which the API already treats as idempotent. A circuit can't queue anything while it's disconnected, and it blocks the page instead. In the Interactive Auto runs, Blazor's error banner also appeared during the reconnect.
+Nothing that was saved was ever lost, in any variant, and in every run the first tap after the fault saved. The "Not saved" rows show that the spike's WebAssembly and island code doesn't retry; production code would queue the entry and retry with its client-generated ID, which the API already treats as idempotent. A circuit can't queue anything while it's disconnected: it covers the page instead, and a tap sent into a connection that later times out is dropped without a trace.
 
 ### 3.6 Server memory
 
@@ -106,7 +108,7 @@ Interactive Server holds about **150–190 KiB of managed memory per open tab** 
 | **WebAssembly, prerendered** | **Keep as the design.** It meets LCP, CLS and NFR-PRF-7 at any latency, shares view models with MAUI (NFR-MNT-4) and degrades well offline. Its one weakness is taps during start (open item 5) |
 | **Interactive Server** | **Ruled out**, now for a stronger reason than NFR-SCL-2: it can't meet NFR-PRF-7 at ordinary mobile latency, it blocks the screen and can lose a tap during a dead zone, and a deploy reloads every open page. Its good start-up numbers come from not running anything in the browser, which is also why every tap waits for the network |
 | **Interactive Auto** | **Ruled out.** First visits inherit every circuit problem above; return visits bring back WebAssembly's start-up taps. It doesn't remove open item 5 for returning members, who are most of a daily tracker's visits |
-| **Static SSR with JavaScript islands** | **The fallback, if beta data says open item 5 is real.** It is the fastest in every lab measurement: interactive at first paint, 10 ms feedback at any latency, 14 KiB, no circuit and no runtime. The cost is code, not speed: every interactive behavior on the web is hand-written JavaScript plus a server endpoint that returns HTML, instead of a Razor component bound to the shared view model. That breaks NFR-MNT-4's shared view models for the web, and the gap grows with the richer Public-phase screens (meal planner, recipe builder, charts, the coach workspace) |
+| **Static SSR with JavaScript islands** | **The fallback, if beta data says open item 5 is real.** It is the fastest in every lab measurement: interactive at first paint, 10 ms feedback at any latency, 14 KiB, no circuit and no runtime. The cost is code, not speed: every interactive behavior on the web is hand-written JavaScript plus a server endpoint that returns HTML, instead of a Razor component bound to the shared view model. That breaks NFR-MNT-4's shared view models for the web, and the gap grows with the richer Public-phase screens (meal planner, recipe builder, charts, the coach workspace). Even the spike's one button needed hand-written state handling: review found that responses to two quick taps could arrive out of order and leave stale totals |
 
 The ADR 0003 design stands. The web keeps prerendering plus WebAssembly, and the build rules in the [first spike's findings](blazor-prerendering-web-vitals.md#5-rules-for-the-build) still apply.
 
