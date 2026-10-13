@@ -72,7 +72,7 @@ The design details (schemas, the sync protocol, the offline grant lease, deletio
 
 ## Follow-up
 
-1. Spike per-request RLS claims through Npgsql or EF Core with Supavisor, measured against NFR-PRF-1 and NFR-PRF-2.
+1. Spike per-request RLS claims through EF Core (the chosen data-access library, with the schema still owned by the SQL migrations) and Supavisor, measured against NFR-PRF-1 and NFR-PRF-2. Fall back to plain Npgsql only if EF Core can't meet them.
 2. Spike Sign in with Apple and MFA from MAUI to Supabase, and check passkey support.
 3. Spike Blazor prerendering with WebAssembly against NFR-PRF-8.
 4. Build a cost model from vendor quotes.
