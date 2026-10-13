@@ -1,6 +1,7 @@
 # Architecture Options: FitCore
 
 - **Status:** Proposal v2, for a decision by the product owner. Revised against the measurable NFRs in [`NFR.md`](NFR.md).
+- **Decision record:** [ADR 0003](decisions/0003-modular-monolith.md) (proposed)
 - **Date:** 2026-10-13
 - **Input:** [`BRD.md`](BRD.md) (especially [§3](BRD.md#3-permissions), [§5](BRD.md#5-platform-and-technology-constraints), [§6](BRD.md#6-business-rules) and [§7](BRD.md#7-compliance-and-constraints)) and [`NFR.md`](NFR.md)
 
@@ -207,7 +208,7 @@ Modules call each other only through their contracts, in process. Side effects t
 
 ### B.3 Database and schema approach
 
-- **One Supabase Postgres database with a schema per module** (`identity`, `catalog`, `nutrition`, `training`, `progress`, `targets`, `care`, `billing`, `integration`, `audit`). A module reads and writes only its own schema.
+- **One Supabase Postgres database with one schema per module**, named after the module in snake case: `identity`, `catalog`, `nutrition`, `training`, `progress`, `targets`, `care`, `sync` (device cursors, conflict records, grant leases), `billing`, `integrations`, `data_rights` (export and deletion jobs) and `audit`. A module reads and writes only its own schema.
 - **Supabase CLI SQL migrations** are the single schema source, so RLS and pgTAP sit next to the tables and the R1 work carries over. Migrations follow expand-then-contract, so the previous release still runs after a rollback (NFR-OPS-6).
 - **RLS stays on for API traffic.** For each request, the API opens a transaction, switches to the `authenticated` role and sets `request.jwt.claims` from the caller's validated token. A bug in the API still can't read another member's rows. A few jobs use separate privileged credentials: catalog import, webhooks, deletion and export.
 - **Key tables:**
