@@ -6,7 +6,7 @@ Guidance for Claude Code in this repository. Read the BRD and the NFRs before an
 
 FitCore is a health, fitness and nutrition app. Members plan targets and track nutrition (including estimated food cost), training, body metrics and wellness, with optional support from a coach or clinician. It's multi-user from day one, and every member's data is private by default.
 
-The repository is at the requirements and architecture stage. It holds documentation only, and no application code exists yet.
+The repository is at the requirements and architecture stage. It holds documentation and throwaway spike code under `spikes/`; no application code exists yet.
 
 | Path | Contents |
 |---|---|
@@ -15,7 +15,9 @@ The repository is at the requirements and architecture stage. It holds documenta
 | `docs/NFR.md` | Measurable non-functional requirements, each with an ID such as `NFR-PRV-4` |
 | `docs/architecture-options.md` | Three architecture options compared against the NFRs, with a cost check |
 | `docs/decisions/` | Architecture decision records (ADRs), numbered `NNNN-title.md` |
-| `.github/workflows/ci.yml` | CI: Markdown lint and link check |
+| `docs/spikes/` | Spike findings, one file per spike |
+| `spikes/` | Throwaway spike code (.NET 10, Docker Compose). Each spike has a README with run instructions. Not production code |
+| `.github/workflows/ci.yml` | CI: Markdown lint, link check and spike build |
 | `.markdownlint-cli2.jsonc` | Markdown lint configuration (MD013 line length is off) |
 
 ## Commands
@@ -29,11 +31,18 @@ lychee --include-fragments '**/*.md'           # https://lychee.cli.rs
 
 Use the pinned linter version: newer markdownlint releases add rules (such as MD060) that CI doesn't run, and that flag the existing files.
 
+Spike code needs the .NET 10 SDK. CI builds it; running a spike needs Docker (see its README):
+
+```sh
+dotnet build spikes/rls-pooling/RlsSpike
+```
+
 ## Platform and architecture
 
 - **Clients:** .NET MAUI apps with native XAML UI on iOS, Android, Windows and macOS, and a Blazor Web App on the web ([BRD §5](docs/BRD.md#5-platform-and-technology-constraints)). The two UIs are built separately and share view models, service clients and the domain library. Every feature ships on both (NFR-CMP-3).
 - **Domain logic:** one shared C# library for units, nutrition totals, estimated cost, targets and guardrails, with table tests and at least 90% coverage (NFR-MNT-1). Business logic never lives in UI code (NFR-MNT-4).
 - **Backend:** a modular monolith on ASP.NET Core (.NET 10 LTS), with Supabase for Postgres, Auth, Storage and RLS. This is **accepted** in [ADR 0003](docs/decisions/0003-modular-monolith.md) (2026-10-13). Its follow-up spikes come before the solution scaffold.
+- **Database identity:** each unit of work applies the caller's identity with `SET LOCAL ROLE authenticated` and `set_config('request.jwt.claims', …, true)` only, never session-level `SET`. The API connects through Supavisor session mode or directly, not transaction mode ([spike findings](docs/spikes/rls-connection-pooling.md#4-rules-for-the-api)).
 - **Sign-in:** email/password, Google, Microsoft and Sign in with Apple, through Supabase Auth.
 
 When code is added, update this file with the layout and the commands to build, test and lint it, and extend CI to run them.

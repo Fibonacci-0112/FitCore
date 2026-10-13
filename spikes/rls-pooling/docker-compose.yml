@@ -1,0 +1,49 @@
+# Local stack for the RLS connection-pooling spike (ADR 0003 follow-up 1).
+# Postgres uses the same image family as hosted Supabase; Supavisor is the
+# pooler hosted Supabase runs. Local-only credentials; nothing here is secret.
+name: fitcore-rls-spike
+
+services:
+  db:
+    image: supabase/postgres:17.6.1.016
+    environment:
+      POSTGRES_PASSWORD: spike-password
+    ports:
+      - "54322:5432"
+    volumes:
+      - ./db/97-supavisor-metadata.sql:/docker-entrypoint-initdb.d/migrations/97-supavisor-metadata.sql:ro
+      - ./db/98-auth-uid.sql:/docker-entrypoint-initdb.d/migrations/98-auth-uid.sql:ro
+      - ./db/99-schema.sql:/docker-entrypoint-initdb.d/migrations/99-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
+
+  pooler:
+    image: supabase/supavisor:${SUPAVISOR_VERSION:-2.9.13}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      /bin/sh -c "/app/bin/migrate &&
+      /app/bin/supavisor eval \"$$(cat /etc/pooler/pooler.exs)\" &&
+      /app/bin/server"
+    environment:
+      PORT: 4000
+      DATABASE_URL: ecto://supabase_admin:spike-password@db:5432/_supabase
+      CLUSTER_POSTGRES: "true"
+      SECRET_KEY_BASE: "local-spike-secret-key-base-not-a-real-secret-0123456789abcdef"
+      VAULT_ENC_KEY: "local-spike-vault-key-32-chars-x"
+      API_JWT_SECRET: spike-api-jwt-secret
+      METRICS_JWT_SECRET: spike-metrics-jwt-secret
+      REGION: local
+      ERL_AFLAGS: -proto_dist inet_tcp
+      DB_PASSWORD: spike-password
+      POOL_SIZE: "10"
+      RLIMIT_NOFILE: "10000"
+    ports:
+      - "54329:5432" # session mode
+      - "54330:6543" # transaction mode
+    volumes:
+      - ./pooler/pooler.exs:/etc/pooler/pooler.exs:ro
