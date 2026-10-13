@@ -25,12 +25,12 @@ Pick the target from the request:
 
 | Request | Diff to review |
 |---|---|
-| Nothing named | `git diff origin/main...HEAD` plus uncommitted changes (`git diff HEAD`) |
+| Nothing named | `git diff origin/main...HEAD`, plus uncommitted changes (`git diff HEAD`) and untracked files (`git ls-files --others --exclude-standard`) |
 | A branch | `git diff origin/main...<branch>` |
 | A PR number | The PR's diff and its existing review threads, through the GitHub tools available in the session |
 | A path | The current content of that path, reviewed as a whole |
 
-Fetch `origin/main` first so the base is current. List the changed files, then read each one in full, not only the hunks: a rule break often sits in unchanged lines that the change now reaches.
+Fetch `origin/main` first so the base is current. List the changed and untracked files, then read each one in full, not only the hunks: a rule break often sits in unchanged lines that the change now reaches.
 
 ## 3. Read the requirements the diff touches
 

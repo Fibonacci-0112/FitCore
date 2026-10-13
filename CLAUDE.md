@@ -30,8 +30,9 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `tests/FitCore.Web.Tests/` | The web host's pipeline, in memory: API errors as problem details, `no-store` pages, prerendering |
 | `Directory.Build.props`, `Directory.Packages.props` | Shared build settings (warnings are errors) and central package versions. `spikes/` opts out of both |
 | `.github/workflows/ci.yml` | CI: Markdown lint, link check, solution format check, build and test, and spike build |
-| `.github/skills/code-review/SKILL.md` | GitHub Copilot code-review skill: checklists drawn from the BRD, NFRs, ADRs and spike rules. Update it when those rules change. It is also the checklist for the Claude Code skill below |
+| `.github/skills/code-review/SKILL.md` | GitHub Copilot code-review skill: checklists drawn from the BRD, NFRs, ADRs and spike rules. Update it when those rules change. It is also the checklist for the Claude Code and Codex skills below |
 | `.claude/skills/fitcore-review/SKILL.md` | Claude Code review skill (`/fitcore-review`): runs the Copilot skill's checklist with local checks and verified findings |
+| `.agents/skills/fitcore-review/SKILL.md` | Codex review skill (`$fitcore-review`): the same runner for Codex |
 | `.markdownlint-cli2.jsonc` | Markdown lint configuration (MD013 line length is off) |
 
 ## Commands
