@@ -49,7 +49,7 @@ Time until the screen accepts taps, in ms, cold / warm:
 |---|---|---|---|---|
 | WebAssembly | 20,464 / 4,938 | 5,069 / 2,081 | 3,097 / 797 | 2,353 KiB |
 | Interactive Server | 3,727 / 2,723 | 1,023 / 789 | 365 / 254 | 65 KiB |
-| Interactive Auto, first visit | 4,455 | 1,242 | 433 | 65 KiB, then up to 2.3 MiB of runtime in the background |
+| Interactive Auto, first visit | 4,455 | 1,242 | 433 | 161 KiB on Slow 4G; 1,114 KiB on Fast 4G and desktop, where more of the WebAssembly runtime arrived in the background before the visit ended |
 | JavaScript island | 1,246 / 652 | 357 / 193 | 111 / 58 | 14 KiB |
 
 The island is interactive as soon as it paints. Interactive Auto behaves like Interactive Server on a first visit. On a return visit it runs WebAssembly, but only if the first visit stayed long enough to download the runtime in the background: about 3 s on a fast connection, and longer than these short visits on Slow 4G.
@@ -105,10 +105,10 @@ Interactive Server holds about **150–190 KiB of managed memory per open tab** 
 
 | Variant | Verdict |
 |---|---|
-| **WebAssembly, prerendered** | **Keep as the design.** It meets LCP, CLS and NFR-PRF-7 at any latency, shares view models with MAUI (NFR-MNT-4) and degrades well offline. Its one weakness is taps during start (open item 5) |
+| **WebAssembly, prerendered** | **Keep as the design.** It meets LCP and CLS, its tap feedback doesn't depend on network latency (median about 35 ms at 2× CPU), it shares view models with MAUI (NFR-MNT-4) and it degrades well offline. Two weaknesses remain: taps during start (open item 5), and slower single taps after start, over NFR-PRF-7's 100 ms: up to 122 ms here at 2× CPU, and about 150 ms for the first tap on Slow 4G with 4× CPU in the first spike |
 | **Interactive Server** | **Ruled out**, now for a stronger reason than NFR-SCL-2: it can't meet NFR-PRF-7 at ordinary mobile latency, it blocks the screen and can lose a tap during a dead zone, and a deploy reloads every open page. Its good start-up numbers come from not running anything in the browser, which is also why every tap waits for the network |
 | **Interactive Auto** | **Ruled out.** First visits inherit every circuit problem above; return visits bring back WebAssembly's start-up taps. It doesn't remove open item 5 for returning members, who are most of a daily tracker's visits |
-| **Static SSR with JavaScript islands** | **The fallback, if beta data says open item 5 is real.** It is the fastest in every lab measurement: interactive at first paint, 10 ms feedback at any latency, 14 KiB, no circuit and no runtime. The cost is code, not speed: every interactive behavior on the web is hand-written JavaScript plus a server endpoint that returns HTML, instead of a Razor component bound to the shared view model. That breaks NFR-MNT-4's shared view models for the web, and the gap grows with the richer Public-phase screens (meal planner, recipe builder, charts, the coach workspace). Even the spike's one button needed hand-written state handling: review found that responses to two quick taps could arrive out of order and leave stale totals |
+| **Static SSR with JavaScript islands** | **The fallback, if beta data says open item 5 is real.** It leads on readiness and tap feedback: interactive at first paint, 10 ms feedback at any latency, 14 KiB, no circuit and no runtime. It doesn't lead on first paint, which is the same for every variant, or on taps during a cold first load on Slow 4G, where it waits about 0.4 s like Interactive Server and Auto. The cost is code, not speed: every interactive behavior on the web is hand-written JavaScript plus a server endpoint that returns HTML, instead of a Razor component bound to the shared view model. That breaks NFR-MNT-4's shared view models for the web, and the gap grows with the richer Public-phase screens (meal planner, recipe builder, charts, the coach workspace). Even the spike's one button needed hand-written state handling: review found that responses to two quick taps could arrive out of order and leave stale totals |
 
 The ADR 0003 design stands. The web keeps prerendering plus WebAssembly, and the build rules in the [first spike's findings](blazor-prerendering-web-vitals.md#5-rules-for-the-build) still apply.
 

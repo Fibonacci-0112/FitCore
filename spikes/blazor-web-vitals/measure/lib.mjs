@@ -83,7 +83,7 @@ export const readTaps = (page) => page.evaluate(() => {
   });
 });
 
-/** Visible reconnect or error UI that Blazor shows over the page, or null when there is none. */
+/** The text of Blazor's reconnect UI, which covers the page and blocks taps, or null when it isn't shown. */
 export const reconnectUi = (page) => page.evaluate(() => {
   const el = document.getElementById('components-reconnect-modal');
   const visible = (x) => !!x && x.checkVisibility?.() && getComputedStyle(x).display !== 'none';
@@ -95,9 +95,13 @@ export const reconnectUi = (page) => page.evaluate(() => {
       .map((n) => n.textContent.trim()).filter(Boolean).join(' ');
     return `"${text.replace(/\s+/g, ' ').slice(0, 60)}"` || 'reconnect UI';
   }
-  const err = document.getElementById('blazor-error-ui');
-  if (visible(err)) return 'error UI';
   return null;
+});
+
+/** Whether Blazor's error banner is shown. It sits along the bottom of the page and doesn't block taps. */
+export const errorBanner = (page) => page.evaluate(() => {
+  const el = document.getElementById('blazor-error-ui');
+  return !!el && el.checkVisibility?.() && getComputedStyle(el).display !== 'none';
 });
 
 export const median = (xs) => {
