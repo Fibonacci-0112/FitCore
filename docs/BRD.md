@@ -114,7 +114,7 @@ R = read, W = write, — = no access. "Granted" means within an active grant and
 
 ## 5. Platform and technology constraints
 
-The product owner prefers **.NET on every platform**. The full rationale and trade-offs are in [decision 0002](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/decisions/0002-dotnet-platform.md) (status: Proposed).
+**.NET on every platform** is accepted (decided 2026-10-13). The full rationale and trade-offs are in [decision 0002](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/decisions/0002-dotnet-platform.md). That record was archived while still marked Proposed; this document records its acceptance.
 
 | Area | Requirement |
 |---|---|
@@ -207,7 +207,6 @@ The product owner prefers **.NET on every platform**. The full rationale and tra
 4. **Commercial food database** vendor and **AI vision** vendor.
 5. **Success-metric targets** ([§1](#1-purpose-vision-and-success-metrics)).
 6. **Clinician credential verification** method (for example NPI lookup, license checks).
-7. **Approval of decision 0002** (.NET on every platform). The R1 prototype has been removed, so the private beta (R1) is built on whichever platform is approved.
 
 ## 11. Changes from the R1 prototype
 
