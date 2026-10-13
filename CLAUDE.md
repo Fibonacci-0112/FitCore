@@ -31,11 +31,12 @@ lychee --include-fragments '**/*.md'           # https://lychee.cli.rs
 
 Use the pinned linter version: newer markdownlint releases add rules (such as MD060) that CI doesn't run, and that flag the existing files.
 
-Spike code needs the .NET 10 SDK. CI builds it; running a spike needs Docker (see its README):
+Spike code needs the .NET 10 SDK. CI builds it. Running the RLS and auth spikes needs Docker; the Blazor spike needs Node 22 and a Chromium build instead (see each README):
 
 ```sh
 dotnet build spikes/rls-pooling/RlsSpike
 dotnet build spikes/auth-mfa/AuthSpike
+dotnet build spikes/blazor-web-vitals/BlazorSpike
 ```
 
 ## Platform and architecture
@@ -44,6 +45,7 @@ dotnet build spikes/auth-mfa/AuthSpike
 - **Domain logic:** one shared C# library for units, nutrition totals, estimated cost, targets and guardrails, with table tests and at least 90% coverage (NFR-MNT-1). Business logic never lives in UI code (NFR-MNT-4).
 - **Backend:** a modular monolith on ASP.NET Core (.NET 10 LTS), with Supabase for Postgres, Auth, Storage and RLS. This is **accepted** in [ADR 0003](docs/decisions/0003-modular-monolith.md) (2026-10-13). Its follow-up spikes come before the solution scaffold.
 - **Database identity:** each unit of work applies the caller's identity with `SET LOCAL ROLE authenticated` and `set_config('request.jwt.claims', …, true)` only, never session-level `SET`. The API connects through Supavisor session mode or directly, not transaction mode ([spike findings](docs/spikes/rls-connection-pooling.md#4-rules-for-the-api)).
+- **Web rendering:** every Blazor page prerenders on the server and hydrates with WebAssembly, with prerendered data carried by `[PersistentState]`. No WebAssembly-only routes, no Interactive Server or Auto. View-model commands `await Task.Yield()` after the optimistic update and before calling the API ([spike findings](docs/spikes/blazor-prerendering-web-vitals.md#5-rules-for-the-build)).
 - **Sign-in:** email/password, Google, Microsoft and Sign in with Apple, through Supabase Auth.
 - **MFA:** TOTP, offered to everyone and required for clinicians and admins. "Required" is enforced in the API and in RLS by checking `aal2`, since Supabase has no per-role switch. Passkey sign-in counts as a single factor ([spike findings](docs/spikes/apple-sign-in-and-mfa.md#4-rules-for-the-build)).
 

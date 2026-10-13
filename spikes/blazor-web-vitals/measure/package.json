@@ -1,0 +1,16 @@
+{
+  "name": "fitcore-blazor-web-vitals-spike",
+  "private": true,
+  "type": "module",
+  "description": "Measures Core Web Vitals for each Blazor render mode under throttled networks and CPUs",
+  "scripts": {
+    "vitals": "node vitals.mjs",
+    "lighthouse": "node lighthouse.mjs",
+    "bundle": "node bundle.mjs"
+  },
+  "dependencies": {
+    "lighthouse": "12.8.2",
+    "playwright-core": "1.56.1",
+    "web-vitals": "5.1.0"
+  }
+}

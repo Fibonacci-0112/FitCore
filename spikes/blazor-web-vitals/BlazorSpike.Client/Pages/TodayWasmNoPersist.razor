@@ -1,0 +1,16 @@
+@page "/wasm-nopersist"
+@rendermode InteractiveWebAssembly
+@inject IDiaryClient Diary
+
+@* Control: prerendered, but the data is not persisted, so WebAssembly fetches it again on start. *@
+<PageTitle>Today (WebAssembly, prerendered, refetch)</PageTitle>
+<TodayView Model="model" />
+
+@code {
+    private TodayViewModel? model;
+
+    protected override async Task OnInitializedAsync()
+    {
+        model = new TodayViewModel(await Diary.GetTodayAsync(), Diary);
+    }
+}

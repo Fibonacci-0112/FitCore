@@ -1,0 +1,63 @@
+@inject IJSRuntime JS
+
+@* The Today screen, rendered the same way by every variant. Only the page around it changes. *@
+<h1>Today</h1>
+@if (Model is null)
+{
+    <p class="loading">Loading…</p>
+}
+else
+{
+    var t = Model.Totals;
+    <section class="totals" aria-label="Totals">
+        <div class="tile">
+            <span class="label">Energy</span>
+            <span class="value">@(t.IncompleteNutrients > 0 ? "≥ " : "")@t.KcalAtLeast kcal</span>
+            <span class="sub">of @Model.TargetKcal kcal target</span>
+        </div>
+        <div class="tile">
+            <span class="label">Protein</span>
+            <span class="value">@(t.IncompleteNutrients > 0 ? "≥ " : "")@t.ProteinAtLeast.ToString("0.#") g</span>
+            <span class="sub">of @Model.TargetProteinG.ToString("0") g target</span>
+        </div>
+        <div class="tile">
+            <span class="label">Estimated food cost</span>
+            <span class="value">@(t.MissingCost > 0 ? "≥ " : "")@Money.Format(t.CostMinorAtLeast, "USD")</span>
+            <span class="sub">@t.MissingCost items without a price</span>
+        </div>
+    </section>
+    <p class="incomplete">@t.IncompleteNutrients items have incomplete nutrients, so totals are a lower bound.</p>
+
+    <button class="add" disabled="@(!RendererInfo.IsInteractive)" @onclick="Model.QuickAddCommand.ExecuteAsync">Add banana</button>
+
+    <ol class="diary">
+        @foreach (var row in Model.Rows)
+        {
+            var e = row.Entry;
+            <li @key="e.Id" data-row data-pending="@(row.Saved ? "false" : "true")">
+                <span class="meal">@e.Meal</span>
+                <span class="food">@e.Food</span>
+                <span class="qty">@e.Grams.ToString("0") g</span>
+                <span class="kcal">@(e.Kcal is { } k ? $"{k} kcal" : "kcal unknown")</span>
+                <span class="cost">@(e.CostMinor is { } c ? Money.Format(c, e.Currency) : "no price")</span>
+                @if (row.Failed) { <span class="failed">Not saved</span> }
+            </li>
+        }
+    </ol>
+}
+
+@code {
+    [Parameter] public TodayViewModel? Model { get; set; }
+
+    private bool marked;
+
+    // Marks the moment the screen is both showing data and interactive, for the measurement scripts.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!marked && Model is not null && RendererInfo.IsInteractive)
+        {
+            marked = true;
+            await JS.InvokeVoidAsync("performance.mark", "fitcore-ready");
+        }
+    }
+}

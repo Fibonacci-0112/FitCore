@@ -1,0 +1,20 @@
+@page "/wasm"
+@rendermode InteractiveWebAssembly
+@inject IDiaryClient Diary
+
+@* Prerendered on the server, then hydrated by WebAssembly. The prerendered data travels in the page. *@
+<PageTitle>Today (WebAssembly, prerendered)</PageTitle>
+<TodayView Model="model" />
+
+@code {
+    [PersistentState]
+    public DiaryDayDto? Day { get; set; }
+
+    private TodayViewModel? model;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Day ??= await Diary.GetTodayAsync();
+        model = new TodayViewModel(Day, Diary);
+    }
+}
