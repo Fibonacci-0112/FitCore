@@ -119,15 +119,15 @@ The product owner prefers **.NET on every platform**. The full rationale and tra
 | Area | Requirement |
 |---|---|
 | Client platforms | iOS, Android, Windows, macOS and web, all .NET: **.NET MAUI Blazor Hybrid** apps and a **Blazor Web App**, sharing one Razor component library. Native XAML pages only where they clearly pay off: the active workout / rest timer and the camera / barcode scanner. |
-| Domain logic | One shared C# library: units, nutrition totals, estimated cost, targets and guardrails. It ports the rules and table tests from `packages/core`. |
+| Domain logic | One shared C# library: units, nutrition totals, estimated cost, targets and guardrails. It implements the rules in [§6](#6-business-rules), with table tests. The removed R1 prototype's [`packages/core`](https://github.com/Fibonacci-0112/FitCore/tree/7149e58a9b1397b95eb7c1426b90425f09903b6b/packages/core) can serve as a reference. |
 | Backend | **Supabase** for Postgres, Auth, Storage and row-level security, plus **ASP.NET Core** services for server logic: food search/import, AI calls, payment webhooks, notifications. |
 | Sign-in | Email/password, Google, Microsoft and **Sign in with Apple**. Apple App Review Guideline 4.8 requires an iOS app that offers third-party or social login to also offer an equivalent login option with defined privacy protections. Sign in with Apple is the option chosen to meet it. |
 | Stores | Apple App Store, Google Play, Microsoft Store (MSIX), and the web |
-| Existing code | The TypeScript/Expo/Electron R1 code becomes a reference implementation. The database schema, RLS policies, pgTAP tests and data contracts carry over. |
+| Existing code | None. The TypeScript/Expo/Electron R1 prototype has been removed from the repository and is kept only in git history (last at commit [`7149e58`](https://github.com/Fibonacci-0112/FitCore/tree/7149e58a9b1397b95eb7c1426b90425f09903b6b)). Its database schema, RLS policies and pgTAP tests can be reused as a starting point. The data contracts carry over as the rules in [§6.1](#61-data-contracts). |
 
 ## 6. Business rules
 
-### 6.1 Data contracts (carried over from PLAN.md)
+### 6.1 Data contracts
 
 - **Unknown is not zero.** Missing nutrient values stay unknown, and totals show as a lower bound with a count of incomplete items.
 - **Days without a diary record are unknown**, never zero intake. Only days marked complete feed adaptive targets.
@@ -207,7 +207,7 @@ The product owner prefers **.NET on every platform**. The full rationale and tra
 4. **Commercial food database** vendor and **AI vision** vendor.
 5. **Success-metric targets** ([§1](#1-purpose-vision-and-success-metrics)).
 6. **Clinician credential verification** method (for example NPI lookup, license checks).
-7. **Approval of decision 0002** (.NET rewrite) and its timing relative to finishing R1.
+7. **Approval of decision 0002** (.NET on every platform). The R1 prototype has been removed, so the private beta (R1) is built on whichever platform is approved.
 
 ## 11. Changes from the R1 prototype
 
