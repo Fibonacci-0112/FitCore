@@ -8,7 +8,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startProxy } from './proxy.mjs';
-import { launch, startServer, installTapProbe, waitReady, readTaps, reconnectUi, sleep, ms } from './lib.mjs';
+import { launch, startServer, installTapProbe, waitReady, readTaps, reconnectUi, errorBanner, sleep, ms } from './lib.mjs';
 
 const RUNS = Number(process.argv[2] ?? 1);
 const VARIANTS = [
@@ -55,12 +55,14 @@ async function run(variant, fault) {
   const box = await page.locator('.add').boundingBox();
   const ui = new Set();
   let uiMs = 0;
+  let banner = false;
   const t0 = Date.now();
   let done = false;
   const watch = (async () => {
     while (Date.now() - t0 < fault.ms + 60_000 && !done) {
       const text = await reconnectUi(page).catch(() => 'page navigating');
       if (text) { ui.add(text); uiMs += 200; }
+      banner ||= await errorBanner(page).catch(() => false);
       await sleep(200);
     }
   })();
@@ -121,6 +123,7 @@ async function run(variant, fault) {
     during: duringRegistered ? `${seen}; ${settled.stored >= 2 ? 'stored' : '**not stored**'}` : seen,
     ui: ui.size ? `${[...ui].join(' / ')} (${(uiMs / 1000).toFixed(1)} s)` : 'none',
     usable: usable == null ? 'not within 90 s' : `${(usable / 1000).toFixed(1)} s`,
+    banner: banner ? 'shown' : 'none',
     next: nextSaved ? 'saved' : '**not saved**',
     reloads, shown, stored, attempts,
   };
@@ -143,8 +146,9 @@ console.log('- **Dead zone:** nothing gets through, then everything queued is de
 console.log('- **Server restart:** the server process stops and a new one starts 3 s later on the same port, as in a deploy. The diary data survives (a file stands in for the database); circuits don\'t. "State in Redis" uses .NET 10 circuit state persistence with a Redis `HybridCache`.');
 console.log('- **Tap during the fault:** what the member saw after the tap 1 s in (times from the tap, in ms), and whether the server had stored it once the page was usable again and 5 s had passed. A tap that landed on the reconnect UI never reached the button.');
 console.log('- **Reconnect UI:** what Blazor showed over the page, and for how long. **Usable again:** from the end of the fault until no reconnect UI covered a ready screen.');
+console.log('- **Error banner:** whether Blazor\'s error banner appeared at any point. It sits along the bottom of the page and doesn\'t block taps, so it doesn\'t count against "Usable again".');
 console.log('- **Next tap:** one more "Add banana" after that, and whether it saved. **Reloads:** full page reloads.');
 console.log('- **Bananas shown / stored / tapped:** rows on screen at the end, entries the server stored, and taps that reached the button.\n');
-console.log('| Fault | Variant | Renderer | Tap during the fault | Reconnect UI | Usable again | Next tap | Reloads | Bananas shown / stored / tapped |');
-console.log('|---|---|---|---|---|---|---|---|---|');
-for (const r of rows) console.log(`| ${r.fault} | ${r.variant} | ${r.renderer} | ${r.during} | ${r.ui} | ${r.usable} | ${r.next} | ${r.reloads} | ${r.shown} / ${r.stored} / ${r.attempts} |`);
+console.log('| Fault | Variant | Renderer | Tap during the fault | Reconnect UI | Usable again | Error banner | Next tap | Reloads | Bananas shown / stored / tapped |');
+console.log('|---|---|---|---|---|---|---|---|---|---|');
+for (const r of rows) console.log(`| ${r.fault} | ${r.variant} | ${r.renderer} | ${r.during} | ${r.ui} | ${r.usable} | ${r.banner} | ${r.next} | ${r.reloads} | ${r.shown} / ${r.stored} / ${r.attempts} |`);
