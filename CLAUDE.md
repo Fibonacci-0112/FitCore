@@ -18,8 +18,9 @@ The repository is at the requirements and architecture stage. It holds documenta
 | `docs/spikes/` | Spike findings, one file per spike |
 | `spikes/` | Throwaway spike code (.NET 10, Docker Compose or the Supabase CLI, Node for browser checks). Each spike has a README with run instructions. Not production code |
 | `.github/workflows/ci.yml` | CI: Markdown lint, link check and spike build |
-| `.github/skills/code-review/SKILL.md` | GitHub Copilot code-review skill: checklists drawn from the BRD, NFRs, ADRs and spike rules. Update it when those rules change. It is also the checklist for the Claude Code skill below |
+| `.github/skills/code-review/SKILL.md` | GitHub Copilot code-review skill: checklists drawn from the BRD, NFRs, ADRs and spike rules. Update it when those rules change. It is also the checklist for the Claude Code and Codex skills below |
 | `.claude/skills/fitcore-review/SKILL.md` | Claude Code review skill (`/fitcore-review`): runs the Copilot skill's checklist with local checks and verified findings |
+| `.agents/skills/fitcore-review/SKILL.md` | Codex review skill (`$fitcore-review`): the same runner for Codex |
 | `.markdownlint-cli2.jsonc` | Markdown lint configuration (MD013 line length is off) |
 
 ## Commands
