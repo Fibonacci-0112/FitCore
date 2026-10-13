@@ -114,11 +114,11 @@ R = read, W = write, — = no access. "Granted" means within an active grant and
 
 ## 5. Platform and technology constraints
 
-**.NET on every platform** is accepted (decided 2026-10-13). The full rationale and trade-offs are in [decision 0002](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/decisions/0002-dotnet-platform.md). That record was archived while still marked Proposed; this document records its acceptance.
+**.NET on every platform** is accepted (decided 2026-10-13), with **native .NET MAUI XAML apps plus a Blazor Web App** for the most native feel on devices. The rationale and trade-offs for .NET are in [decision 0002](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/decisions/0002-dotnet-platform.md), which was archived while still marked Proposed. That record recommended MAUI Blazor Hybrid and rejected separate XAML and web UIs as too costly for a small team; the product owner has chosen the native XAML option anyway and accepts building two UIs. This document records the final decision.
 
 | Area | Requirement |
 |---|---|
-| Client platforms | iOS, Android, Windows, macOS and web, all .NET: **.NET MAUI Blazor Hybrid** apps and a **Blazor Web App**, sharing one Razor component library. Native XAML pages only where they clearly pay off: the active workout / rest timer and the camera / barcode scanner. |
+| Client platforms | iOS, Android, Windows, macOS and web, all .NET. **.NET MAUI** apps with native **XAML** UI on iOS, Android, Windows and macOS, and a **Blazor Web App** for the web. The two UIs are built separately (XAML pages and Razor components) and share the C# domain library, view models and service clients, so every feature is built and tested on both. |
 | Domain logic | One shared C# library: units, nutrition totals, estimated cost, targets and guardrails. It implements the rules in [§6](#6-business-rules), with table tests. The removed R1 prototype's [`packages/core`](https://github.com/Fibonacci-0112/FitCore/tree/7149e58a9b1397b95eb7c1426b90425f09903b6b/packages/core) can serve as a reference. |
 | Backend | **Supabase** for Postgres, Auth, Storage and row-level security, plus **ASP.NET Core** services for server logic: food search/import, AI calls, payment webhooks, notifications. |
 | Sign-in | Email/password, Google, Microsoft and **Sign in with Apple**. Apple App Review Guideline 4.8 requires an iOS app that offers third-party or social login to also offer an equivalent login option with defined privacy protections. Sign in with Apple is the option chosen to meet it. |
@@ -214,7 +214,7 @@ The R1 prototype (TypeScript, Expo and Electron, described in the archived [`PLA
 
 | Area | R1 prototype | Required in FitCore |
 |---|---|---|
-| Platform | Expo + Electron; TypeScript `packages/core`; Deno Edge Function | .NET MAUI Blazor Hybrid + Blazor Web; C# domain library; ASP.NET Core services ([decision 0002](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/decisions/0002-dotnet-platform.md)) |
+| Platform | Expo + Electron; TypeScript `packages/core`; Deno Edge Function | .NET MAUI XAML apps + Blazor Web App; C# domain library; ASP.NET Core services ([§5](#5-platform-and-technology-constraints), [decision 0002](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/decisions/0002-dotnet-platform.md)) |
 | Authorization | Owner-only RLS | Add a grant model (for example `care_relationships` with scopes, status and audit) and grant-aware policies, with pgTAP tests for grantee and non-grantee access |
 | Targets | Cap at 1%/week; manual targets always win | Soft limits with logged override, a clinician-only hard floor, `targets.set_by` (member, coach, clinician) and an acceptance state |
 | Roles | Members only | Coach, clinician and admin roles; admin catalog curation |
