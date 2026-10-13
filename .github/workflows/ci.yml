@@ -39,3 +39,4 @@ jobs:
         with:
           dotnet-version: "10.0.x"
       - run: dotnet build spikes/rls-pooling/RlsSpike
+      - run: dotnet build spikes/auth-mfa/AuthSpike

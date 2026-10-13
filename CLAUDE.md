@@ -16,7 +16,7 @@ The repository is at the requirements and architecture stage. It holds documenta
 | `docs/architecture-options.md` | Three architecture options compared against the NFRs, with a cost check |
 | `docs/decisions/` | Architecture decision records (ADRs), numbered `NNNN-title.md` |
 | `docs/spikes/` | Spike findings, one file per spike |
-| `spikes/` | Throwaway spike code (.NET 10, Docker Compose). Each spike has a README with run instructions. Not production code |
+| `spikes/` | Throwaway spike code (.NET 10, Docker Compose or the Supabase CLI, Node for browser checks). Each spike has a README with run instructions. Not production code |
 | `.github/workflows/ci.yml` | CI: Markdown lint, link check and spike build |
 | `.markdownlint-cli2.jsonc` | Markdown lint configuration (MD013 line length is off) |
 
@@ -35,6 +35,7 @@ Spike code needs the .NET 10 SDK. CI builds it; running a spike needs Docker (se
 
 ```sh
 dotnet build spikes/rls-pooling/RlsSpike
+dotnet build spikes/auth-mfa/AuthSpike
 ```
 
 ## Platform and architecture
@@ -44,6 +45,7 @@ dotnet build spikes/rls-pooling/RlsSpike
 - **Backend:** a modular monolith on ASP.NET Core (.NET 10 LTS), with Supabase for Postgres, Auth, Storage and RLS. This is **accepted** in [ADR 0003](docs/decisions/0003-modular-monolith.md) (2026-10-13). Its follow-up spikes come before the solution scaffold.
 - **Database identity:** each unit of work applies the caller's identity with `SET LOCAL ROLE authenticated` and `set_config('request.jwt.claims', …, true)` only, never session-level `SET`. The API connects through Supavisor session mode or directly, not transaction mode ([spike findings](docs/spikes/rls-connection-pooling.md#4-rules-for-the-api)).
 - **Sign-in:** email/password, Google, Microsoft and Sign in with Apple, through Supabase Auth.
+- **MFA:** TOTP, offered to everyone and required for clinicians and admins. "Required" is enforced in the API and in RLS by checking `aal2`, since Supabase has no per-role switch. Passkey sign-in counts as a single factor ([spike findings](docs/spikes/apple-sign-in-and-mfa.md#4-rules-for-the-build)).
 
 When code is added, update this file with the layout and the commands to build, test and lint it, and extend CI to run them.
 

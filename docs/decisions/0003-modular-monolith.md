@@ -73,7 +73,7 @@ The design details (schemas, the sync protocol, the offline grant lease, deletio
 ## Follow-up
 
 1. Spike per-request RLS claims through Npgsql or EF Core with Supavisor, measured against NFR-PRF-1 and NFR-PRF-2. Done: see the [spike findings](../spikes/rls-connection-pooling.md). The API connects through Supavisor session mode or directly, not transaction mode, and applies the identity with `SET LOCAL` only.
-2. Spike Sign in with Apple and MFA from MAUI to Supabase, and check passkey support.
+2. Spike Sign in with Apple and MFA from MAUI to Supabase, and check passkey support. Partly done: see the [spike findings](../spikes/apple-sign-in-and-mfa.md). TOTP meets the MFA need, passkey sign-in is beta and single-factor, and the backend must revoke Apple tokens on account deletion. The on-device Apple test is still to run.
 3. Spike Blazor prerendering with WebAssembly against NFR-PRF-8.
 4. Build a cost model from vendor quotes.
 5. Scaffold the solution layout in [`architecture-options.md` §B.2](../architecture-options.md#b2-project-structure-and-boundaries) and extend CI to build and test it.
