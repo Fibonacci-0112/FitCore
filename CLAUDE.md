@@ -27,6 +27,7 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `src/FitCore.Worker/` | `fitcore-worker`: background host |
 | `src/Modules/` | One project per module in ADR 0003, each with a `<Name>Module` entry point. `Modules.targets` and `ModuleCatalog.cs` load every module into both hosts |
 | `tests/FitCore.Architecture.Tests/` | Module boundaries and project layering (NFR-MNT-4) |
+| `tests/FitCore.Web.Tests/` | The web host's pipeline, in memory: API errors as problem details, `no-store` pages, prerendering |
 | `Directory.Build.props`, `Directory.Packages.props` | Shared build settings (warnings are errors) and central package versions. `spikes/` opts out of both |
 | `.github/workflows/ci.yml` | CI: Markdown lint, link check, solution format check, build and test, and spike build |
 | `.markdownlint-cli2.jsonc` | Markdown lint configuration (MD013 line length is off) |

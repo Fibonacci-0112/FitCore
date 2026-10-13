@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Xml.Linq;
 
 namespace FitCore.Architecture.Tests;
 
@@ -22,5 +23,29 @@ internal static class Solution
             .Select(a => a.Name!)
             .Where(n => n.StartsWith("FitCore.", StringComparison.Ordinal));
 
+    /// <summary>The repository root: the folder that holds FitCore.slnx.</summary>
+    public static string Root { get; } = FindRoot();
+
+    /// <summary>The items a project file declares, such as ProjectReference or PackageReference, by include value.</summary>
+    /// <remarks>Unlike compiled references, these include references the code doesn't use yet.</remarks>
+    public static IEnumerable<string> Declared(string project, string item) =>
+        XDocument.Load(Path.Combine(Root, "src", project, project + ".csproj"))
+            .Descendants(item)
+            .Select(e => (string?)e.Attribute("Include") ?? "")
+            .Select(include => item == "ProjectReference" ? Path.GetFileNameWithoutExtension(include.Replace('\\', '/')) : include);
+
     public static string ModuleName(this Assembly module) => module.GetName().Name![ModulePrefix.Length..];
+
+    private static string FindRoot()
+    {
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "FitCore.slnx")))
+            {
+                return dir.FullName;
+            }
+        }
+
+        throw new InvalidOperationException("FitCore.slnx not found above the test output directory.");
+    }
 }

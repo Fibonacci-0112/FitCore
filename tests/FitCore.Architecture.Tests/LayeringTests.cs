@@ -3,15 +3,29 @@ namespace FitCore.Architecture.Tests;
 /// <summary>Which projects may depend on which (architecture-options §B.2, NFR-MNT-4).</summary>
 public sealed class LayeringTests
 {
+    // The shared rules run on devices and in the API, so they may use only pure base-library assemblies: no I/O,
+    // console, processes, networking or data access. Add an assembly here only if it has no side effects.
+    private static readonly string[] DomainAllowed =
+    [
+        "System.Runtime", "System.Collections", "System.Collections.Immutable", "System.Linq", "System.Memory",
+        "System.Runtime.Numerics", "System.Text.RegularExpressions",
+    ];
+
     [Fact]
-    public void Domain_depends_only_on_the_base_class_library()
+    public void Domain_uses_only_pure_base_library_assemblies()
     {
-        // The shared rules run on devices and in the API, so they can't do I/O or depend on any framework.
         var references = Solution.Load("FitCore.Domain").GetReferencedAssemblies().Select(a => a.Name!);
 
-        Assert.All(references, name => Assert.True(
-            name is "System.Runtime" or "netstandard" || name.StartsWith("System.", StringComparison.Ordinal) && !IsIoOrFramework(name),
-            $"FitCore.Domain references {name}."));
+        Assert.All(references, name => Assert.Contains(name, DomainAllowed));
+    }
+
+    [Theory]
+    [InlineData("ProjectReference")]
+    [InlineData("PackageReference")]
+    [InlineData("FrameworkReference")]
+    public void Domain_declares_no_references(string item)
+    {
+        Assert.Empty(Solution.Declared("FitCore.Domain", item));
     }
 
     [Theory]
@@ -21,7 +35,8 @@ public sealed class LayeringTests
     [InlineData("FitCore.Platform", new string[0])]
     public void Project_uses_only_allowed_FitCore_projects(string project, string[] allowed)
     {
-        var references = Solution.Load(project).FitCoreReferences();
+        // Compiled references show what the code uses; declared ones also catch a reference it doesn't use yet.
+        var references = Solution.Load(project).FitCoreReferences().Concat(Solution.Declared(project, "ProjectReference"));
 
         Assert.All(references, name => Assert.Contains(name, allowed));
     }
@@ -34,7 +49,8 @@ public sealed class LayeringTests
 
         foreach (var client in clients)
         {
-            var references = Solution.Load(client).GetReferencedAssemblies().Select(a => a.Name!);
+            var references = Solution.Load(client).GetReferencedAssemblies().Select(a => a.Name!)
+                .Concat(Solution.Declared(client, "PackageReference"));
 
             Assert.DoesNotContain(references, name =>
                 name.StartsWith(Solution.ModulePrefix, StringComparison.Ordinal)
@@ -42,9 +58,4 @@ public sealed class LayeringTests
                 || name.StartsWith("Npgsql", StringComparison.Ordinal));
         }
     }
-
-    private static bool IsIoOrFramework(string name) =>
-        name.StartsWith("System.IO", StringComparison.Ordinal)
-        || name.StartsWith("System.Net", StringComparison.Ordinal)
-        || name.StartsWith("System.Data", StringComparison.Ordinal);
 }
