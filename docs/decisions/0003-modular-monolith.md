@@ -1,6 +1,6 @@
 # 0003: Build the backend as a modular monolith on ASP.NET Core with Supabase
 
-- **Status:** Proposed. Needs the product owner's approval.
+- **Status:** Accepted. Approved by the product owner on 2026-10-13.
 - **Date:** 2026-10-13
 - **Deciders:** Product owner
 - **Related:** [`docs/architecture-options.md`](../architecture-options.md) (the full comparison), [`docs/BRD.md`](../BRD.md) and [`docs/NFR.md`](../NFR.md). Earlier decision records are in git history: [0001](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/decisions/0001-windows-desktop-packaging.md) and [0002](https://github.com/Fibonacci-0112/FitCore/blob/7149e58a9b1397b95eb7c1426b90425f09903b6b/docs/decisions/0002-dotnet-platform.md).
