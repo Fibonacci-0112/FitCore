@@ -65,7 +65,13 @@ public sealed class DiaryStore
     private void Save()
     {
         if (file is null) return;
-        lock (fileLock) File.WriteAllText(file, JsonSerializer.Serialize(added.Values.ToList()));
+        // Write a temporary file and swap it in, so a crash mid-write leaves the previous file intact.
+        lock (fileLock)
+        {
+            var temp = file + ".tmp";
+            File.WriteAllText(temp, JsonSerializer.Serialize(added.Values.ToList()));
+            File.Move(temp, file, overwrite: true);
+        }
     }
 
     /// <summary>Creates 18 reproducible diary entries, including entries with unknown nutrients or missing prices.</summary>

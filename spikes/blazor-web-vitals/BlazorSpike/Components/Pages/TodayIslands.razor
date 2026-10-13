@@ -5,7 +5,8 @@
 @*
     Static server rendering with one JavaScript island: no circuit and no WebAssembly. The page is plain HTML.
     islands/today.js adds a pending row on tap, posts the entry, and swaps in the totals and row the server renders.
-    The totals are still computed in C# (NutritionTotals), on the server.
+    The totals are still computed in C# (NutritionTotals), on the server. Links to this page turn off Blazor's enhanced
+    navigation (data-enhance-nav="false"), which wouldn't run the page's own script.
 *@
 <PageTitle>Today (static SSR with a JavaScript island)</PageTitle>
 

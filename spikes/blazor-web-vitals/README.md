@@ -63,7 +63,7 @@ The server reads these environment variables, for the resilience runs:
 |---|---|
 | `SPIKE_STORE_FILE` | Keeps added diary entries in a JSON file, so they survive a restart as the database would make them |
 | `SPIKE_CIRCUIT_RETENTION_SECONDS` | Sets `CircuitOptions.DisconnectedCircuitRetentionPeriod` (default 3 minutes) |
-| `SPIKE_REDIS` | Adds a Redis-backed `HybridCache`, which .NET 10 uses to persist circuit state across servers and restarts |
+| `SPIKE_REDIS` | Adds a Redis-backed `HybridCache`, which .NET 10 uses to persist circuit state across servers. It covers an evicted or paused circuit only: when the server process stops, open pages still reload ([results](results/resilience.md)) |
 
 `dotnet publish BlazorSpike -c Release -o publish -p:SpikeNoYield=true` builds the view model without the `Task.Yield()` that fixes the first tap, for comparison. Delete `obj/` and `bin/` before switching between AOT and non-AOT builds ([why](results/experiments.md#4-build-gotcha)).
 

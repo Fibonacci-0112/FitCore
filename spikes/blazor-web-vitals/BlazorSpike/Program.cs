@@ -52,19 +52,25 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 
 var api = app.MapGroup("/api");
+// The measurement hooks (paths starting with "_") answer only on the loopback interface: _memory forces blocking
+// garbage collections and _reset clears the diary, so nothing else may reach them.
+var hooks = api.MapGroup("").AddEndpointFilter(async (ctx, next) =>
+    ctx.HttpContext.Connection.RemoteIpAddress is { } ip && System.Net.IPAddress.IsLoopback(ip)
+        ? await next(ctx)
+        : Results.NotFound());
 api.MapGet("/diary/today", (DiaryStore s) => s.GetToday());
 api.MapPost("/diary/{date}", (DateOnly date, DiaryEntryDto entry, DiaryStore s) => s.AddAsync(date, entry));
 // Measurement hooks: how many times "today" was read, and a reset between runs.
-api.MapGet("/_stats", (DiaryStore s) => new
+hooks.MapGet("/_stats", (DiaryStore s) => new
 {
     todayReads = s.TodayReads,
     added = s.AddedCount,
     circuits = CircuitCounter.Open,
     connectedCircuits = CircuitCounter.Connected,
 });
-api.MapPost("/_reset", (DiaryStore s) => s.Reset());
+hooks.MapPost("/_reset", (DiaryStore s) => s.Reset());
 // Server memory after a full, compacting collection, for the memory-per-circuit script.
-api.MapGet("/_memory", () =>
+hooks.MapGet("/_memory", () =>
 {
     GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
     GC.WaitForPendingFinalizers();
