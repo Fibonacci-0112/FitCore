@@ -15,6 +15,17 @@ public sealed class QuantityResolverTests
         { "grams on a per-serving food", Foods.ProteinBar, Quantity.Grams(30), 0.5m },
         { "a count of a weightless serving", Foods.Egg, Quantity.Servings(3, Foods.PieceId), 3m },
         { "millilitres on a per-serving food", Foods.Syrup, Quantity.Milliliters(45), 3m },
+        { "milligrams", Foods.Bread, Quantity.Of(500, QuantityUnit.Milligrams), 0.005m },
+        { "kilograms", Foods.Bread, Quantity.Of(0.25m, QuantityUnit.Kilograms), 2.5m },
+        { "a pound", Foods.Bread, Quantity.Of(1, QuantityUnit.Pounds), 4.5359237m },
+        { "ounces", Foods.Bread, Quantity.Of(4, QuantityUnit.Ounces), 1.1339809250m },
+        { "a cup of milk", Foods.Milk, Quantity.Of(1, QuantityUnit.Cups), 2.365882365m },
+        { "fluid ounces of milk", Foods.Milk, Quantity.Of(8, QuantityUnit.FluidOunces), 2.365882365m },
+        { "a litre of milk", Foods.Milk, Quantity.Of(1, QuantityUnit.Liters), 10m },
+        { "a teaspoon of milk", Foods.Milk, Quantity.Of(1, QuantityUnit.Teaspoons), 0.0492892159375m },
+        { "a tablespoon of syrup", Foods.Syrup, Quantity.Of(1, QuantityUnit.Tablespoons), 0.98578431875m },
+        { "a gallon of milk", Foods.Milk, Quantity.Of(1, QuantityUnit.Gallons), 37.85411784m },
+        { "ounces of milk by weight, through density", Foods.Milk, Quantity.Of(1, QuantityUnit.Ounces), 0.27523808859223300970873786408m },
     };
 
     [Theory]
@@ -34,6 +45,8 @@ public sealed class QuantityResolverTests
         { "another food's serving", Foods.Bread, Quantity.Servings(1, Foods.CupId), QuantityError.UnknownServing },
         { "millilitres of a food with no density", Foods.Bread, Quantity.Milliliters(100), QuantityError.Unconvertible },
         { "grams of a liquid with no density", Foods.Juice, Quantity.Grams(100), QuantityError.Unconvertible },
+        { "a cup of bread, with no density", Foods.Bread, Quantity.Of(1, QuantityUnit.Cups), QuantityError.Unconvertible },
+        { "ounces of juice by weight, with no density", Foods.Juice, Quantity.Of(8, QuantityUnit.Ounces), QuantityError.Unconvertible },
         { "grams of a weightless serving", Foods.Egg, Quantity.Grams(50), QuantityError.Unconvertible },
         { "grams of a per-serving food measured in millilitres", Foods.Syrup, Quantity.Grams(15), QuantityError.Unconvertible },
         { "a missing basis serving", Foods.Broken, Quantity.Grams(10), QuantityError.MissingBasisServing },
@@ -73,6 +86,9 @@ public sealed class QuantityResolverTests
         { "a serving to grams", Foods.Bread, Quantity.Servings(1, Foods.SliceId), Quantity.Grams(560), 0.05m },
         { "millilitres to a serving", Foods.Juice, Quantity.Milliliters(250), Quantity.Milliliters(1000), 0.25m },
         { "grams to millilitres through density", Foods.Milk, Quantity.Grams(103), Quantity.Milliliters(1000), 0.1m },
+        { "a cup from a gallon", Foods.Milk, Quantity.Of(1, QuantityUnit.Cups), Quantity.Of(1, QuantityUnit.Gallons), 0.0625m },
+        { "ounces from a pound", Foods.Bread, Quantity.Of(4, QuantityUnit.Ounces), Quantity.Of(1, QuantityUnit.Pounds), 0.25m },
+        { "grams from a pound", Foods.Bread, Quantity.Grams(45.359237m), Quantity.Of(1, QuantityUnit.Pounds), 0.1m },
         { "the same weightless serving", Foods.Egg, Quantity.Servings(2, Foods.PieceId), Quantity.Servings(12, Foods.PieceId), 2m / 12 },
     };
 

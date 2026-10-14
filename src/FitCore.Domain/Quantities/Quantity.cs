@@ -1,11 +1,26 @@
 namespace FitCore.Domain.Quantities;
 
-/// <summary>How an amount is expressed. Grams and millilitres are canonical; everything else is a serving (BRD §6.1).</summary>
+/// <summary>
+/// How an amount is expressed. Every mass unit converts exactly to grams and every volume unit to millilitres,
+/// the canonical units. Food-specific measures such as "1 slice" or "1 cup, chopped = 128 g" are servings (BRD §6.1).
+/// </summary>
 public enum QuantityUnit
 {
     Grams,
     Milliliters,
     Servings,
+    Milligrams,
+    Kilograms,
+    Ounces,
+    Pounds,
+    Liters,
+    Teaspoons,
+    Tablespoons,
+    FluidOunces,
+    Cups,
+    Pints,
+    Quarts,
+    Gallons,
 }
 
 /// <summary>An amount of a food as the member entered it.</summary>
@@ -19,6 +34,11 @@ public readonly record struct Quantity(decimal Amount, QuantityUnit Unit, Guid? 
     public static Quantity Milliliters(decimal amount) => new(amount, QuantityUnit.Milliliters);
 
     public static Quantity Servings(decimal count, Guid servingId) => new(count, QuantityUnit.Servings, servingId);
+
+    /// <summary>An amount in a mass or volume unit. Use <see cref="Servings"/> for servings.</summary>
+    public static Quantity Of(decimal amount, QuantityUnit unit) => unit == QuantityUnit.Servings
+        ? throw new ArgumentException("A serving needs its serving ID.", nameof(unit))
+        : new(amount, unit);
 }
 
 /// <summary>A household measure or count for one food, such as "1 slice = 28 g".</summary>

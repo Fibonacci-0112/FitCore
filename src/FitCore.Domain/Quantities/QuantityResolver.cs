@@ -20,13 +20,13 @@ public static class QuantityResolver
         Guid? servingId = null;
         decimal? servingCount = null;
 
-        switch (quantity.Unit)
+        switch (QuantityUnits.DimensionOf(quantity.Unit))
         {
-            case QuantityUnit.Grams:
-                grams = quantity.Amount;
+            case Dimension.Mass:
+                grams = QuantityUnits.ToCanonical(quantity.Amount, quantity.Unit);
                 break;
-            case QuantityUnit.Milliliters:
-                milliliters = quantity.Amount;
+            case Dimension.Volume:
+                milliliters = QuantityUnits.ToCanonical(quantity.Amount, quantity.Unit);
                 break;
             default:
                 var serving = food.Servings.FirstOrDefault(s => s.Id == quantity.ServingId);

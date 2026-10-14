@@ -89,6 +89,17 @@ public sealed class EstimatedCostTests
     }
 
     [Fact]
+    public void Costs_household_units_against_a_package_in_another_unit()
+    {
+        var milkId = Guid.Parse("10000000-0000-0000-0000-000000000002");
+        var gallon = new PriceRecord(Guid.NewGuid(), milkId, Quantity.Of(1, QuantityUnit.Gallons), Money.FromMajor(4.00m, Usd), Oct1, Created);
+
+        Assert.Equal(new Money(25, Usd), EstimatedCost.Of(Foods.Milk, Quantity.Of(1, QuantityUnit.Cups), gallon).Value);
+        Assert.Equal(new Money(3, Usd), EstimatedCost.Of(Foods.Milk, Quantity.Of(2, QuantityUnit.Tablespoons), gallon).Value);
+        Assert.Equal(new Money(10, Usd), EstimatedCost.Of(Foods.Milk, Quantity.Grams(100), gallon).Value);
+    }
+
+    [Fact]
     public void Cannot_cost_an_amount_that_does_not_compare_with_the_package()
     {
         var price = Price("00000000-0000-0000-0000-00000000000a", 3.49m, Oct1);
