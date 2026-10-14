@@ -47,7 +47,7 @@ Every feature PR builds on these. Each is introduced by the first PR that needs 
 
 - `FitCore.Platform` owns one `NpgsqlDataSource` and a unit-of-work wrapper. Each unit runs in a transaction and sends `SET LOCAL ROLE authenticated` and `set_config('request.jwt.claims', …, true)` in the same batch as its first statement. EF Core work gets the claims interceptor. Work outside a transaction fails closed.
 - The API and worker connect as `fitcore_api` through Supavisor session mode or directly, never transaction mode. Pool size × instances stays within the pooler limit ([RLS spike §4](spikes/rls-connection-pooling.md#4-rules-for-the-api)).
-- Jobs that write outside any caller's identity use their own least-privilege login roles and data sources, never `fitcore_api` ([§B.3](architecture-options.md#b3-database-and-schema-approach)). R1 has one: `fitcore_catalog_import`, which can write only the shared rows of `catalog` and has no access to any member schema. Webhooks, deletion and export get their own roles in later phases.
+- Jobs that write outside any caller's identity use their own least-privilege login roles and data sources, never `fitcore_api` ([§B.3](architecture-options.md#b3-database-and-schema-approach)). R1 has one: `fitcore_catalog_import`, which can read and write only the shared rows of `catalog` (`owner_id` is null). Row policies keep it away from members' custom foods and servings in the same schema, and it has no access to any member schema. Webhooks, deletion and export get their own roles in later phases.
 - Writes are idempotent by client-generated UUID.
 
 ### 3.3 Authentication
@@ -139,7 +139,8 @@ Nine PRs, each scoped to one item and merged green. A feature PR may land its we
   - Six-actor pgTAP tests for every private table. Grantee actors run against `care.relationships` rows inserted by the test.
   - A cross-member read or write succeeds only through an active grant whose scope covers the data, and only as the [permission matrix](BRD.md#32-permission-matrix) allows. Other members, out-of-scope grantees and revoked grantees are denied.
   - A member's write to a shared catalog row is denied, and so is any anonymous access.
-  - `fitcore_api` and `authenticated` can't write shared catalog rows; `fitcore_catalog_import` can't read or write any member schema.
+  - `fitcore_api` and `authenticated` can't write shared catalog rows.
+  - `fitcore_catalog_import` can insert and update only shared catalog rows. It can't select, insert as, update or delete members' custom foods or servings, and it can't read or write any member schema.
 
 ### PR 4: Sign-in, profile and app shells
 
