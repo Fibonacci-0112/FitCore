@@ -65,7 +65,8 @@ public sealed record GuardrailReport(IReadOnlyList<SoftLimit> SoftLimits, IReadO
 public static class TargetGuardrails
 {
     /// <summary>Lists every limit the target crosses, for a member of the given weight and height.</summary>
-    /// <exception cref="ArgumentOutOfRangeException">The weight, height or weekly loss limit isn't positive.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The weight or height isn't positive.</exception>
+    /// <exception cref="ArgumentException">The settings are invalid (<see cref="GuardrailSettings.IsValid"/>).</exception>
     public static GuardrailReport Evaluate(
         ProposedTarget target, decimal currentWeightKg, decimal heightCm, GuardrailSettings? settings = null)
     {
@@ -73,7 +74,7 @@ public static class TargetGuardrails
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(currentWeightKg);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(heightCm);
         settings ??= GuardrailSettings.Default;
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(settings.MaxLossFractionPerWeek);
+        settings.ThrowIfInvalid();
         var soft = new List<SoftLimit>();
         var hard = new List<HardLimit>();
 

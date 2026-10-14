@@ -16,4 +16,23 @@ public sealed record GuardrailSettings(
     decimal MinimumGoalBmi = 18.5m)
 {
     public static GuardrailSettings Default { get; } = new();
+
+    /// <summary>Every limit is positive, and the soft calorie floor isn't below the hard floor.</summary>
+    public bool IsValid =>
+        MaxLossFractionPerWeek > 0
+        && SoftCalorieFloorKcal > 0
+        && ProteinGramsPerKg > 0
+        && HardCalorieFloorKcal > 0
+        && MinimumGoalBmi > 0
+        && SoftCalorieFloorKcal >= HardCalorieFloorKcal;
+
+    /// <summary>Throws when the settings break an invariant, which is a configuration error rather than member input.</summary>
+    /// <exception cref="ArgumentException">A limit isn't positive, or the soft calorie floor is below the hard floor.</exception>
+    public void ThrowIfInvalid()
+    {
+        if (!IsValid)
+        {
+            throw new ArgumentException("Guardrail limits must be positive, and the soft calorie floor can't be below the hard floor.", "settings");
+        }
+    }
 }

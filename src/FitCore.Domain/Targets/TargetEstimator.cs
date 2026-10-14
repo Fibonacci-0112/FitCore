@@ -50,6 +50,7 @@ public static class TargetEstimator
         GuardrailSettings? settings = null)
     {
         settings ??= GuardrailSettings.Default;
+        settings.ThrowIfInvalid();
         var resting = EnergyExpenditure.RestingKcal(sex, weightKg, heightCm, ageYears);
         var maintenance = EnergyExpenditure.TotalKcal(resting, activity);
 

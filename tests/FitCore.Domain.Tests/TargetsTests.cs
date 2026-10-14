@@ -97,13 +97,31 @@ public sealed class TargetsTests
         Assert.Equal(error, GoalPlanner.Plan(current, goal, Today, pace).Error);
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(-0.01)]
-    public void Rejects_a_weekly_loss_limit_that_is_not_positive(decimal fraction)
+    public static TheoryData<string, GuardrailSettings> InvalidSettings => new()
     {
-        var settings = new GuardrailSettings(MaxLossFractionPerWeek: fraction);
+        { "a zero weekly loss limit", new GuardrailSettings(MaxLossFractionPerWeek: 0) },
+        { "a negative weekly loss limit", new GuardrailSettings(MaxLossFractionPerWeek: -0.01m) },
+        { "a zero soft calorie floor", new GuardrailSettings(SoftCalorieFloorKcal: 0) },
+        { "a zero protein default", new GuardrailSettings(ProteinGramsPerKg: 0) },
+        { "a zero hard calorie floor", new GuardrailSettings(HardCalorieFloorKcal: 0) },
+        { "a zero minimum goal BMI", new GuardrailSettings(MinimumGoalBmi: 0) },
+        { "a soft floor below the hard floor", new GuardrailSettings(SoftCalorieFloorKcal: 700) },
+    };
+
+    [Theory]
+    [MemberData(nameof(InvalidSettings))]
+    public void Invalid_settings_are_rejected_everywhere(string _, GuardrailSettings settings)
+    {
+        Assert.False(settings.IsValid);
         Assert.Equal(GoalPlanError.InvalidInput, GoalPlanner.Plan(80, 70, Today, new GoalPace.Rate(0.5m), settings).Error);
+        Assert.Throws<ArgumentException>(() => TargetGuardrails.Evaluate(new ProposedTarget(2000, KgPerWeek: -0.5m), 80, 180, settings));
+        Assert.Throws<ArgumentException>(() => TargetEstimator.Estimate(BiologicalSex.Male, 30, 180, 80, ActivityLevel.Moderate, 0, settings));
+    }
+
+    [Fact]
+    public void The_default_settings_are_valid()
+    {
+        Assert.True(GuardrailSettings.Default.IsValid);
     }
 
     public static TheoryData<string, ProposedTarget, SoftLimit[], HardLimit[]> Reports => new()
@@ -241,15 +259,6 @@ public sealed class TargetsTests
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => TargetGuardrails.Evaluate(new ProposedTarget(2000), (decimal)weightKg, (decimal)heightCm));
         Assert.Throws<ArgumentOutOfRangeException>(() => EnergyExpenditure.BodyMassIndex((decimal)weightKg, (decimal)heightCm));
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(-0.01)]
-    public void Guardrails_reject_a_weekly_loss_limit_that_is_not_positive(double fraction)
-    {
-        var settings = new GuardrailSettings(MaxLossFractionPerWeek: (decimal)fraction);
-        Assert.Throws<ArgumentOutOfRangeException>(() => TargetGuardrails.Evaluate(new ProposedTarget(2000, KgPerWeek: -0.5m), 80, 180, settings: settings));
     }
 
     [Fact]

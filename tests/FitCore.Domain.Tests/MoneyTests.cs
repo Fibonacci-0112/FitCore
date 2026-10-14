@@ -23,7 +23,10 @@ public sealed class MoneyTests
     [InlineData("US")]
     [InlineData("USDX")]
     [InlineData("U5D")]
-    public void Rejects_anything_but_three_capital_letters(string? text)
+    [InlineData("AAA")]
+    [InlineData("XXX")]
+    [InlineData("XAU")]
+    public void Rejects_anything_but_an_assigned_currency_with_a_minor_unit(string? text)
     {
         Assert.False(CurrencyCode.TryParse(text, out _));
         Assert.Throws<FormatException>(() => CurrencyCode.Parse(text!));

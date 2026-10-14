@@ -58,7 +58,7 @@ public static class GoalPlanner
     {
         ArgumentNullException.ThrowIfNull(pace);
         settings ??= GuardrailSettings.Default;
-        if (currentWeightKg <= 0 || goalWeightKg <= 0 || settings.MaxLossFractionPerWeek <= 0)
+        if (currentWeightKg <= 0 || goalWeightKg <= 0 || !settings.IsValid)
         {
             return GoalPlanError.InvalidInput;
         }
