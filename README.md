@@ -40,6 +40,8 @@ The full business requirements are in [`docs/BRD.md`](docs/BRD.md), and the meas
 | **Coach/Pro tier** | Independent coaches and dietitians | Coach workspace, grants, plan assignment, comments, messaging, check-ins, coach billing |
 | **Clinic phase** | Clinics and insurers | HIPAA program: BAAs, HIPAA-eligible hosting, clinician credential verification |
 
+The [implementation plan](docs/implementation-plan.md) breaks the private beta into PRs and lists what each later phase needs.
+
 ## Core rules
 
 - **Unknown is not zero.** Missing nutrient values stay unknown, and totals are shown as a lower bound with a count of incomplete items. Days with no diary record are unknown, not zero intake.

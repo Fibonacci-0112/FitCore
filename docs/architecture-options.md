@@ -417,4 +417,4 @@ The recommendation from the first version stands, and the measurable NFRs make t
 1. Record this choice as an architecture decision record (NFR-MNT-5). Done: [ADR 0003](decisions/0003-modular-monolith.md) was accepted on 2026-10-13.
 2. Spike the three riskiest mechanics: per-request RLS claims through Npgsql or EF Core with Supavisor, measured against NFR-PRF-1/2 (done: [findings](spikes/rls-connection-pooling.md)); Sign in with Apple and MFA from MAUI to Supabase (partly done: [findings](spikes/apple-sign-in-and-mfa.md)); and the Blazor prerender plus WebAssembly bundle, measured against NFR-PRF-8.
 3. Build a cost model from current vendor quotes and confirm the $500 ceiling before the Public launch.
-4. Build the private beta from the Identity, Catalog, Nutrition, Targets and Progress modules. Put `care.relationships`, grant-aware RLS and the six-actor pgTAP pattern in place from the start.
+4. Build the private beta from the Identity, Catalog, Nutrition, Targets and Progress modules. Put `care.relationships`, grant-aware RLS and the six-actor pgTAP pattern in place from the start. The build order is in the [implementation plan](implementation-plan.md).
