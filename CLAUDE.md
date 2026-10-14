@@ -42,7 +42,8 @@ CI lints every Markdown file and checks every link, including links to headings.
 
 ```sh
 npx --yes markdownlint-cli2@0.18.1 "**/*.md"   # the version CI's action uses
-lychee --include-fragments '**/*.md'           # https://lychee.cli.rs
+lychee --include-fragments '**/*.md' \
+  --remap 'https://github\.com/([^/]+)/([^/]+)/blob/(.+) https://raw.githubusercontent.com/$1/$2/$3'   # https://lychee.cli.rs, as CI runs it
 ```
 
 Use the pinned linter version: newer markdownlint releases add rules (such as MD060) that CI doesn't run, and that flag the existing files.
