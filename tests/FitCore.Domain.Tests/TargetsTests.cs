@@ -181,6 +181,37 @@ public sealed class TargetsTests
         Assert.Equal(decision, TargetGuardrails.Decide(report, setter, acknowledged));
     }
 
+    public static TheoryData<string, BiologicalSex, decimal, decimal, int> InvalidProfiles => new()
+    {
+        { "an undefined sex", (BiologicalSex)99, 80, 180, 30 },
+        { "a zero weight", BiologicalSex.Male, 0, 180, 30 },
+        { "a negative weight", BiologicalSex.Male, -80, 180, 30 },
+        { "a zero height", BiologicalSex.Female, 60, 0, 30 },
+        { "a negative age", BiologicalSex.Female, 60, 165, -1 },
+    };
+
+    [Theory]
+    [MemberData(nameof(InvalidProfiles))]
+    public void Rejects_an_invalid_profile_instead_of_estimating(string _, BiologicalSex sex, decimal weightKg, decimal heightCm, int age)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => TargetEstimator.Estimate(sex, age, heightCm, weightKg, ActivityLevel.Moderate, 0));
+    }
+
+    [Fact]
+    public void Rejects_an_undefined_activity_level_instead_of_estimating()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => TargetEstimator.Estimate(BiologicalSex.Male, 30, 180, 80, (ActivityLevel)99, 0));
+    }
+
+    [Theory]
+    [InlineData(0, 180)]
+    [InlineData(80, 0)]
+    public void Guardrails_reject_a_weight_or_height_that_is_not_positive(double weightKg, double heightCm)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => TargetGuardrails.Evaluate(new ProposedTarget(2000), (decimal)weightKg, (decimal)heightCm));
+        Assert.Throws<ArgumentOutOfRangeException>(() => EnergyExpenditure.BodyMassIndex((decimal)weightKg, (decimal)heightCm));
+    }
+
     [Fact]
     public void Body_mass_index_is_kilograms_over_metres_squared()
     {

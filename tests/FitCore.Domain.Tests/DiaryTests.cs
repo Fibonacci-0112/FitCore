@@ -81,7 +81,7 @@ public sealed class DiaryTests
             new(default, new Nutrients { EnergyKcal = null, ProteinGrams = 20 }, CostStatus.Priced, new Money(150, Usd), Guid.NewGuid()),
         ];
 
-        var day = DaySummary.Of(entries, Usd);
+        var day = DaySummary.Of(entries, Usd, markedComplete: false);
 
         Assert.Equal(3, day.EntryCount);
         Assert.Equal(new NutrientTotal(500, 1), day.Nutrients[Nutrient.EnergyKcal]);
@@ -90,9 +90,38 @@ public sealed class DiaryTests
     }
 
     [Fact]
+    public void A_day_not_marked_complete_has_unknown_intake_even_when_empty()
+    {
+        var day = DaySummary.Of([], Usd, markedComplete: false);
+
+        Assert.False(day.IsComplete);
+        Assert.Null(day.KnownEnergyKcal);
+    }
+
+    [Fact]
+    public void A_complete_day_knows_its_intake_only_when_every_entry_knows_its_calories()
+    {
+        var known = Snapshot(Quantity.Grams(100), [BreadPrice]).Value;
+        var unknown = known with { Nutrients = new Nutrients { ProteinGrams = 5 } };
+
+        Assert.Equal(500m, DaySummary.Of([known, known], Usd, markedComplete: true).KnownEnergyKcal);
+        Assert.Null(DaySummary.Of([known, unknown], Usd, markedComplete: true).KnownEnergyKcal);
+        Assert.Null(DaySummary.Of([known, known], Usd, markedComplete: false).KnownEnergyKcal);
+    }
+
+    [Fact]
+    public void A_complete_empty_day_is_a_known_zero()
+    {
+        var day = DaySummary.Of([], Usd, markedComplete: true);
+
+        Assert.True(day.IsComplete);
+        Assert.Equal(0m, day.KnownEnergyKcal);
+    }
+
+    [Fact]
     public void An_empty_day_has_no_entries_and_costs_nothing()
     {
-        var day = DaySummary.Of([], Usd);
+        var day = DaySummary.Of([], Usd, markedComplete: false);
 
         Assert.Equal(0, day.EntryCount);
         Assert.Equal(new CostTotal(Money.Zero(Usd), 0), day.EstimatedCost);

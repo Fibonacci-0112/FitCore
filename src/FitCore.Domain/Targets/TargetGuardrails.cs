@@ -65,10 +65,13 @@ public sealed record GuardrailReport(IReadOnlyList<SoftLimit> SoftLimits, IReadO
 public static class TargetGuardrails
 {
     /// <summary>Lists every limit the target crosses, for a member of the given weight and height.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The weight or height isn't positive.</exception>
     public static GuardrailReport Evaluate(
         ProposedTarget target, decimal currentWeightKg, decimal heightCm, GuardrailSettings? settings = null)
     {
         ArgumentNullException.ThrowIfNull(target);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(currentWeightKg);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(heightCm);
         settings ??= GuardrailSettings.Default;
         var soft = new List<SoftLimit>();
         var hard = new List<HardLimit>();

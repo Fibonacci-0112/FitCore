@@ -39,6 +39,7 @@ public static class TargetEstimator
     /// <param name="activity">Activity level.</param>
     /// <param name="kgPerWeek">The goal's signed weekly rate, negative for loss.</param>
     /// <param name="settings">The guardrail settings; the defaults when null.</param>
+    /// <exception cref="ArgumentOutOfRangeException">The sex or activity level isn't defined, the weight or height isn't positive, or the age is negative.</exception>
     public static TargetEstimate Estimate(
         BiologicalSex sex,
         int ageYears,
