@@ -38,7 +38,7 @@ Every feature PR builds on these. Each is introduced by the first PR that needs 
 - Each module owns one schema, named after the module in snake case. The Data API doesn't expose module schemas; the `/v1` API is the only way in ([§B.3](architecture-options.md#b3-database-and-schema-approach)).
 - Every migration enables RLS explicitly on every table it creates. FitCore doesn't use Supabase's "Enable automatic RLS" option: it covers only the `public` schema, and it adds database state that isn't in the migrations.
 - `supabase/tests/` holds the pgTAP suite. It starts with three shared tests:
-  - a test that fails if any table in any schema lacks RLS (NFR-PRV-1);
+  - a test that fails if any table in a FitCore module schema lacks RLS (NFR-PRV-1);
   - a six-actor helper for owner, other member, grantee in scope, grantee out of scope, revoked grantee and admin (NFR-PRV-2);
   - a test that the `fitcore_api` login role has no table grants and can only switch to `authenticated` ([RLS spike §5](spikes/rls-connection-pooling.md#5-open-points)).
 - Every migration ships with its pgTAP tests (NFR-MNT-2).
@@ -47,12 +47,13 @@ Every feature PR builds on these. Each is introduced by the first PR that needs 
 
 - `FitCore.Platform` owns one `NpgsqlDataSource` and a unit-of-work wrapper. Each unit runs in a transaction and sends `SET LOCAL ROLE authenticated` and `set_config('request.jwt.claims', …, true)` in the same batch as its first statement. EF Core work gets the claims interceptor. Work outside a transaction fails closed.
 - The API and worker connect as `fitcore_api` through Supavisor session mode or directly, never transaction mode. Pool size × instances stays within the pooler limit ([RLS spike §4](spikes/rls-connection-pooling.md#4-rules-for-the-api)).
+- Jobs that write outside any caller's identity use their own least-privilege login roles and data sources, never `fitcore_api` ([§B.3](architecture-options.md#b3-database-and-schema-approach)). R1 has one: `fitcore_catalog_import`, which can write only the shared rows of `catalog` and has no access to any member schema. Webhooks, deletion and export get their own roles in later phases.
 - Writes are idempotent by client-generated UUID.
 
 ### 3.3 Authentication
 
 - The API validates Supabase JWTs against the project's signing keys. Clinician and admin endpoints require `aal2` (NFR-SEC-3; [auth spike §4](spikes/apple-sign-in-and-mfa.md#4-rules-for-the-build)).
-- **Web:** a server-side session. The Supabase session is held in an HttpOnly, Secure, SameSite cookie, and the browser calls the same-origin `/v1` API. Tokens never reach WebAssembly or local storage. This needs [ADR 0005](#8-decisions-still-needed).
+- **Web:** a server-side session. The Supabase session is held in an HttpOnly, Secure, SameSite cookie, and the browser calls the same-origin `/v1` API. Every cookie-authenticated `/v1` endpoint that changes state requires antiforgery validation, or an equivalent Origin and CSRF-token check. Tokens never reach WebAssembly or local storage. This needs [ADR 0005](#8-decisions-still-needed).
 - **MAUI:** `Supabase.Gotrue` behind a thin wrapper, with tokens in the platform secure store (NFR-SEC-8). On iOS, Sign in with Apple uses the native provider with a hashed nonce.
 - Sign-in methods for R1: email and password, Google, Microsoft and Apple ([BRD §4.2](BRD.md#42-feature-list)). Passwords follow NFR-SEC-2; sign-in rate limits and lockout follow NFR-SEC-4.
 
@@ -86,7 +87,7 @@ Every feature PR builds on these. Each is introduced by the first PR that needs 
   - `FitCore.Domain.Tests`: table tests for every BRD §6 rule, with a 90% line-coverage gate in CI (NFR-MNT-1).
   - `FitCore.Modules.<Name>.Tests`: each module against the local Supabase stack, through the real unit of work.
   - `FitCore.Architecture.Tests`: extended as projects are added.
-  - `FitCore.Load.Tests`: before the public launch (NFR-SCL-1).
+  - `FitCore.Load.Tests`: a beta-sized run in [PR 9](#pr-9-beta-environments-and-release) for the API latency targets (NFR-PRF-1, NFR-PRF-2), then the 3× peak run before the public launch (NFR-SCL-1).
 - CI gains jobs as their first content lands: pgTAP, dependency and secret scanning plus SAST (NFR-SEC-9), a MAUI build, and Lighthouse with the Playwright tap tests and a payload budget. Every job gates merging to `main` (NFR-MNT-3).
 
 ## 4. R1 data model
@@ -107,8 +108,8 @@ The data contracts from [BRD §6.1](BRD.md#61-data-contracts) apply throughout:
 
 - Every nutrient column is nullable. `null` means unknown, never zero, and totals report a lower bound plus a count of incomplete items.
 - Money is `bigint` minor units plus a `char(3)` ISO 4217 code. A price in another currency than the profile's leaves the entry unpriced; R1 does no conversion.
-- `g` and `ml` are canonical, and household measures are `food_servings` rows. Mass↔volume conversion needs `density_g_per_ml`; anything else is rejected.
-- A diary entry's price is the member's price for that food with the latest `effective_date` on or before the diary date.
+- Amounts can be entered in any standard mass unit (mg, g, kg, oz, lb) or volume unit (ml, l, tsp, tbsp, fl oz, cup, pint, quart, gallon). Each converts exactly to `g` or `ml`, the canonical units. Food-specific measures, such as "1 slice" or a label's "1 cup = 128 g", are `food_servings` rows. Mass↔volume conversion needs `density_g_per_ml`; anything else is rejected.
+- A diary entry's price is the member's price for that food, in the profile currency, with the latest `effective_date` on or before the diary date. When two prices share that date, the most recently created one wins, so the choice is deterministic.
 - Snapshots are immutable. Editing a food or price never changes a logged entry (NFR-REL-4).
 - `diary_date` is a `date` in the member's local calendar.
 
@@ -136,7 +137,9 @@ Nine PRs, each scoped to one item and merged green. A feature PR may land its we
 - **Scope:** the tables in [section 4](#4-r1-data-model), their policies and audit triggers.
 - **Accept:**
   - Six-actor pgTAP tests for every private table. Grantee actors run against `care.relationships` rows inserted by the test.
-  - Every cross-member read and write is denied, as is a member's write to a shared catalog row and any anonymous access.
+  - A cross-member read or write succeeds only through an active grant whose scope covers the data, and only as the [permission matrix](BRD.md#32-permission-matrix) allows. Other members, out-of-scope grantees and revoked grantees are denied.
+  - A member's write to a shared catalog row is denied, and so is any anonymous access.
+  - `fitcore_api` and `authenticated` can't write shared catalog rows; `fitcore_catalog_import` can't read or write any member schema.
 
 ### PR 4: Sign-in, profile and app shells
 
@@ -144,7 +147,8 @@ Nine PRs, each scoped to one item and merged green. A feature PR may land its we
 - **Accept:**
   - Sign up, sign in and sign out on the web and on Android in CI. Signing out clears every cached member record.
   - A user under 18 can't complete sign-up.
-  - The native smoke checklist (sign-in redirect, session survives an app kill, offline save error) passes on a physical iPhone and Android device. The on-device Apple test from the auth spike runs here.
+  - The native smoke checklist (sign-in redirect, session survives an app kill, tokens in the platform secure store, offline save error) passes on a physical iPhone and Android device and on Windows and macOS. The on-device Apple test from the auth spike runs here.
+  - A cross-site request that changes state through the web session is rejected.
 
 ### PR 5: Targets
 
@@ -152,7 +156,7 @@ Nine PRs, each scoped to one item and merged green. A feature PR may land its we
 - **Accept:**
   - An override past a soft limit needs the acknowledgement round trip and writes an audit event.
   - A member can't save a target past the hard floor.
-  - A manual target wins over the estimate.
+  - The newest accepted target wins, and a member can always replace it with a manual target ([BRD §6.2](BRD.md#62-targets-and-safety) precedence).
 
 ### PR 6: Custom foods, servings and prices
 
@@ -163,12 +167,13 @@ Nine PRs, each scoped to one item and merged green. A feature PR may land its we
 
 ### PR 7: USDA foods
 
-- **Scope:** a worker job that loads the USDA FoodData Central bulk download into `catalog`, full-text and trigram search, the food search screens and the "Data: USDA FoodData Central" attribution.
+- **Scope:** a worker job that loads the USDA FoodData Central bulk download into `catalog` as `fitcore_catalog_import`, full-text and trigram search, the food search screens and the "Data: USDA FoodData Central" attribution. Every USDA call has a timeout, retry and circuit breaker, and search reads only the local catalog.
 - **Accept:**
   - First results within NFR-PRF-3 (p95 ≤ 800 ms) on the staging database.
   - Re-running the import creates no duplicate rows.
   - Search is limited to 60 requests per minute per member (NFR-SCL-5).
   - A member can price a USDA food without changing the shared row.
+  - A fault-injection test with USDA unreachable: the import fails cleanly and retries later, while search over imported foods, custom foods and diary logging keep working (NFR-AVL-6).
 
 ### PR 8: Diary, Today and weight
 
@@ -185,7 +190,10 @@ Nine PRs, each scoped to one item and merged green. A feature PR may land its we
   - The production Supabase project, the build-once deploy pipeline with rollback (NFR-OPS-6), daily backups (NFR-AVL-3), error tracking, uptime checks and billing alerts (NFR-CST-2).
   - Real-user Core Web Vitals reporting, and tests of the start-up INP mitigations ([NFR open item 5](NFR.md#17-open-items)).
   - Store builds for testers: TestFlight, a Google Play internal track and sideloaded Windows and macOS builds.
-- **Accept:** a deploy and a rollback both run from CI, and a restore from backup has been rehearsed once.
+  - `FitCore.Load.Tests` with a beta-sized load test against staging, including identity handling and pool sizing ([RLS spike §5](spikes/rls-connection-pooling.md#5-open-points)).
+- **Accept:**
+  - A deploy and a rollback both run from CI, and a restore from backup has been rehearsed once.
+  - API reads meet NFR-PRF-1 (p95 ≤ 300 ms) and writes meet NFR-PRF-2 (p95 ≤ 500 ms) under the beta-sized load test.
 
 ## 6. R1 exit criteria
 
