@@ -6,7 +6,7 @@ Guidance for Claude Code in this repository. Read the BRD and the NFRs before an
 
 FitCore is a health, fitness and nutrition app. Members plan targets and track nutrition (including estimated food cost), training, body metrics and wellness, with optional support from a coach or clinician. It's multi-user from day one, and every member's data is private by default.
 
-The repository holds the requirements and architecture documents, throwaway spike code under `spikes/`, and the start of the application: the solution scaffold from [`architecture-options.md` §B.2](docs/architecture-options.md#b2-project-structure-and-boundaries). The projects build and the architecture tests run, but no features exist yet.
+The repository holds the requirements and architecture documents, throwaway spike code under `spikes/`, and the start of the application: the solution scaffold from [`architecture-options.md` §B.2](docs/architecture-options.md#b2-project-structure-and-boundaries). The projects build and the tests run. `FitCore.Domain` holds the BRD §6 rules, but no features exist yet.
 
 | Path | Contents |
 |---|---|
@@ -18,7 +18,7 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `docs/spikes/` | Spike findings, one file per spike |
 | `spikes/` | Throwaway spike code (.NET 10, Docker Compose or the Supabase CLI, Node for browser checks). Each spike has a README with run instructions. Not production code |
 | `FitCore.slnx` | The solution: everything under `src/` and `tests/` |
-| `src/FitCore.Domain/` | Shared rules (BRD §6). No I/O and no references |
+| `src/FitCore.Domain/` | Shared rules (BRD §6): quantities and units, nutrient totals, money and estimated cost, diary snapshots, local dates, targets and guardrails. No I/O and no references |
 | `src/FitCore.Contracts/` | Versioned DTOs and the typed API client (`/v1`) |
 | `src/FitCore.Client.Core/` | View models, offline store and sync engine, shared by the MAUI app and the Blazor client |
 | `src/FitCore.Platform/` | Cross-cutting server code: the `IModule` host, and later auth, the RLS session, rate limits and redacted logging |
@@ -27,6 +27,8 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `src/FitCore.Worker/` | `fitcore-worker`: background host |
 | `src/Modules/` | One project per module in ADR 0003, each with a `<Name>Module` entry point. `Modules.targets` and `ModuleCatalog.cs` load every module into both hosts |
 | `tests/FitCore.Architecture.Tests/` | Module boundaries and project layering (NFR-MNT-4) |
+| `tests/FitCore.Domain.Tests/` | Table tests for every BRD §6 rule in `FitCore.Domain`, with a 90% line-coverage gate (NFR-MNT-1) |
+| `tests/coverage-gate.py` | Fails CI when a package's line coverage in a Cobertura report is below a minimum |
 | `tests/FitCore.Web.Tests/` | The web host's pipeline, in memory: API errors as problem details, `no-store` pages, prerendering |
 | `Directory.Build.props`, `Directory.Packages.props` | Shared build settings (warnings are errors) and central package versions. `spikes/` opts out of both |
 | `.github/workflows/ci.yml` | CI: Markdown lint, link check, solution format check, build and test, and spike build |
@@ -52,6 +54,9 @@ The solution needs the .NET 10 SDK (`global.json`). CI runs these, and a PR must
 dotnet format FitCore.slnx --verify-no-changes   # formatting and code style (.editorconfig)
 dotnet build FitCore.slnx                        # warnings are errors
 dotnet test --solution FitCore.slnx              # Microsoft.Testing.Platform runner, set in global.json
+dotnet test --project tests/FitCore.Domain.Tests --coverage --coverage-output-format cobertura \
+  --coverage-output domain.cobertura.xml --results-directory TestResults
+python3 tests/coverage-gate.py TestResults/domain.cobertura.xml FitCore.Domain 90   # NFR-MNT-1
 dotnet run --project src/FitCore.Web             # the web app and API, https://localhost:7180
 ```
 
