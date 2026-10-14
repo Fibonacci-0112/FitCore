@@ -157,7 +157,7 @@ Nine PRs, each scoped to one item and merged green. A feature PR may land its we
 - **Accept:**
   - An override past a soft limit needs the acknowledgement round trip and writes an audit event.
   - A member can't save a target past the hard floor.
-  - The newest accepted target wins, and a member can always replace it with a manual target ([BRD §6.2](BRD.md#62-targets-and-safety) precedence).
+  - The newest accepted target wins. A member can replace it with a manual target, unless a clinician set it below the hard floor; ending that one takes the member revoking the grant or the clinician changing it ([BRD §6.2](BRD.md#62-targets-and-safety) precedence).
 
 ### PR 6: Custom foods, servings and prices
 
@@ -181,6 +181,7 @@ Nine PRs, each scoped to one item and merged green. A feature PR may land its we
 - **Scope:** diary entries with snapshots, marking a day complete, the Today screen (calories, macros, estimated food cost, incomplete and unpriced flags), weight logging, and the Lighthouse and Playwright tap-test CI jobs.
 - **Accept:**
   - The full R1 journey passes as an end-to-end test on the web: sign up → profile → accept or override targets → custom food with a price → USDA food with a price → log both in g, ml and servings → Today matches hand-computed totals and flags → log weight → a second member sees none of it.
+  - The same journey passes on iOS, Android, Windows and macOS, with a recorded result for each platform: automated where the platform allows, otherwise run by hand from a checklist.
   - Today meets NFR-PRF-5, and lab Core Web Vitals meet NFR-PRF-8.
   - A failed save keeps the form and offers retry (NFR-REL-1).
 
@@ -193,7 +194,7 @@ Nine PRs, each scoped to one item and merged green. A feature PR may land its we
   - Store builds for testers: TestFlight, a Google Play internal track and sideloaded Windows and macOS builds.
   - `FitCore.Load.Tests` with a beta-sized load test against staging, including identity handling and pool sizing ([RLS spike §5](spikes/rls-connection-pooling.md#5-open-points)).
 - **Accept:**
-  - A deploy and a rollback both run from CI, and a restore from backup has been rehearsed once.
+  - A deploy and a rollback both run from CI, the rollback finishes within 30 minutes (NFR-OPS-6), and a restore from backup has been rehearsed once.
   - API reads meet NFR-PRF-1 (p95 ≤ 300 ms) and writes meet NFR-PRF-2 (p95 ≤ 500 ms) under the beta-sized load test.
 
 ## 6. R1 exit criteria
