@@ -108,8 +108,19 @@ public static class TargetGuardrails
     /// <param name="report">The limits the target crosses.</param>
     /// <param name="setter">Who is setting the target.</param>
     /// <param name="memberAcknowledged">For a member: whether they acknowledged the soft-limit warning.</param>
-    public static TargetDecision Decide(GuardrailReport report, TargetSetter setter, bool memberAcknowledged = false)
+    /// <param name="memberOverridesDisabled">
+    /// True when the member is flagged by eating-disorder screening. Overrides past the soft limits are then disabled
+    /// (BRD §6.2), so a member's or coach's target past a soft limit is blocked. A clinician is unaffected.
+    /// </param>
+    /// <exception cref="ArgumentOutOfRangeException">The setter isn't defined.</exception>
+    public static TargetDecision Decide(
+        GuardrailReport report, TargetSetter setter, bool memberAcknowledged = false, bool memberOverridesDisabled = false)
     {
+        if (!Enum.IsDefined(setter))
+        {
+            throw new ArgumentOutOfRangeException(nameof(setter), setter, null);
+        }
+
         ArgumentNullException.ThrowIfNull(report);
         if (report.HardLimits.Count > 0)
         {
@@ -123,9 +134,10 @@ public static class TargetGuardrails
 
         return setter switch
         {
+            TargetSetter.Clinician => TargetDecision.Apply,
+            _ when memberOverridesDisabled => TargetDecision.Blocked,
             TargetSetter.Member => memberAcknowledged ? TargetDecision.ApplyAsOverride : TargetDecision.NeedsAcknowledgement,
-            TargetSetter.Coach => TargetDecision.PendingMemberAcceptance,
-            _ => TargetDecision.Apply,
+            _ => TargetDecision.PendingMemberAcceptance,
         };
     }
 }

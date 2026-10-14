@@ -181,6 +181,28 @@ public sealed class TargetsTests
         Assert.Equal(decision, TargetGuardrails.Decide(report, setter, acknowledged));
     }
 
+    public static TheoryData<string, GuardrailReport, TargetSetter, TargetDecision> FlaggedDecisions => new()
+    {
+        { "member, clear", Clear, TargetSetter.Member, TargetDecision.Apply },
+        { "member, soft, even acknowledged", Soft, TargetSetter.Member, TargetDecision.Blocked },
+        { "coach, soft", Soft, TargetSetter.Coach, TargetDecision.Blocked },
+        { "clinician, soft", Soft, TargetSetter.Clinician, TargetDecision.Apply },
+        { "clinician, hard", Hard, TargetSetter.Clinician, TargetDecision.ApplyAndNotifyMember },
+    };
+
+    [Theory]
+    [MemberData(nameof(FlaggedDecisions))]
+    public void A_flagged_member_cannot_override_a_soft_limit(string _, GuardrailReport report, TargetSetter setter, TargetDecision decision)
+    {
+        Assert.Equal(decision, TargetGuardrails.Decide(report, setter, memberAcknowledged: true, memberOverridesDisabled: true));
+    }
+
+    [Fact]
+    public void An_unknown_setter_is_rejected_instead_of_failing_open()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => TargetGuardrails.Decide(Soft, (TargetSetter)99, memberAcknowledged: true));
+    }
+
     public static TheoryData<string, BiologicalSex, decimal, decimal, int> InvalidProfiles => new()
     {
         { "an undefined sex", (BiologicalSex)99, 80, 180, 30 },

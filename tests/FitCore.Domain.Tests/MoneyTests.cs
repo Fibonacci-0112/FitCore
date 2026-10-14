@@ -9,6 +9,8 @@ public sealed class MoneyTests
     [InlineData("EUR", 2)]
     [InlineData("JPY", 0)]
     [InlineData("KWD", 3)]
+    [InlineData("CLF", 4)]
+    [InlineData("UYW", 4)]
     public void Knows_each_currency_minor_unit(string code, int digits)
     {
         Assert.Equal(digits, CurrencyCode.Parse(code).MinorUnitDigits);
@@ -35,6 +37,8 @@ public sealed class MoneyTests
     [InlineData("1200", "JPY", 1200)]
     [InlineData("1200.5", "JPY", 1201)]
     [InlineData("1.2345", "KWD", 1235)]
+    [InlineData("1.2345", "CLF", 12345)]
+    [InlineData("1.23455", "UYW", 12346)]
     public void Converts_major_units_to_integer_minor_units(string major, string currency, long minor)
     {
         var money = Money.FromMajor(decimal.Parse(major, System.Globalization.CultureInfo.InvariantCulture), CurrencyCode.Parse(currency));
@@ -46,6 +50,7 @@ public sealed class MoneyTests
     [InlineData(349, "USD", "3.49")]
     [InlineData(1200, "JPY", "1200")]
     [InlineData(1235, "KWD", "1.235")]
+    [InlineData(12345, "CLF", "1.2345")]
     public void Converts_minor_units_back_to_major_units(long minor, string currency, string major)
     {
         Assert.Equal(decimal.Parse(major, System.Globalization.CultureInfo.InvariantCulture), new Money(minor, CurrencyCode.Parse(currency)).ToMajor());

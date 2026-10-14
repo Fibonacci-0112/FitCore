@@ -9,14 +9,20 @@ public readonly record struct CurrencyCode
 
     private static readonly HashSet<string> ThousandthsMinorUnit = ["BHD", "IQD", "JOD", "KWD", "LYD", "OMR", "TND"];
 
+    private static readonly HashSet<string> TenThousandthsMinorUnit = ["CLF", "UYW"];
+
     private CurrencyCode(string value) => Value = value;
 
     public static CurrencyCode Usd { get; } = new("USD");
 
     public string Value { get; }
 
-    /// <summary>How many digits the minor unit has: 2 for USD (cents), 0 for JPY, 3 for KWD.</summary>
-    public int MinorUnitDigits => NoMinorUnit.Contains(Value) ? 0 : ThousandthsMinorUnit.Contains(Value) ? 3 : 2;
+    /// <summary>How many digits the minor unit has: 2 for USD (cents), 0 for JPY, 3 for KWD, 4 for CLF.</summary>
+    public int MinorUnitDigits =>
+        NoMinorUnit.Contains(Value) ? 0
+        : ThousandthsMinorUnit.Contains(Value) ? 3
+        : TenThousandthsMinorUnit.Contains(Value) ? 4
+        : 2;
 
     public static bool TryParse(string? text, out CurrencyCode code)
     {
@@ -51,5 +57,14 @@ public readonly record struct Money(long MinorUnits, CurrencyCode Currency)
     /// <summary>The amount in major units, such as 3.49.</summary>
     public decimal ToMajor() => MinorUnits / Pow10(Currency.MinorUnitDigits);
 
-    private static decimal Pow10(int digits) => digits switch { 0 => 1m, 3 => 1000m, _ => 100m };
+    private static decimal Pow10(int digits)
+    {
+        var factor = 1m;
+        for (var i = 0; i < digits; i++)
+        {
+            factor *= 10;
+        }
+
+        return factor;
+    }
 }
