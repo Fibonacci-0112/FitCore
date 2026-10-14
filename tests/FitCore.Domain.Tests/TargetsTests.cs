@@ -243,6 +243,15 @@ public sealed class TargetsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => EnergyExpenditure.BodyMassIndex((decimal)weightKg, (decimal)heightCm));
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-0.01)]
+    public void Guardrails_reject_a_weekly_loss_limit_that_is_not_positive(double fraction)
+    {
+        var settings = new GuardrailSettings(MaxLossFractionPerWeek: (decimal)fraction);
+        Assert.Throws<ArgumentOutOfRangeException>(() => TargetGuardrails.Evaluate(new ProposedTarget(2000, KgPerWeek: -0.5m), 80, 180, settings: settings));
+    }
+
     [Fact]
     public void Body_mass_index_is_kilograms_over_metres_squared()
     {
