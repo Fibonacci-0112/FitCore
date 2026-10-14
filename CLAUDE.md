@@ -14,6 +14,7 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `docs/BRD.md` | Business requirements: roles, permission matrix, features, business rules, compliance |
 | `docs/NFR.md` | Measurable non-functional requirements, each with an ID such as `NFR-PRV-4` |
 | `docs/architecture-options.md` | Three architecture options compared against the NFRs, with a cost check |
+| `docs/implementation-plan.md` | Build order: the R1 PRs with acceptance criteria, later phases, open decisions |
 | `docs/decisions/` | Architecture decision records (ADRs), numbered `NNNN-title.md` |
 | `docs/spikes/` | Spike findings, one file per spike |
 | `spikes/` | Throwaway spike code (.NET 10, Docker Compose or the Supabase CLI, Node for browser checks). Each spike has a README with run instructions. Not production code |
