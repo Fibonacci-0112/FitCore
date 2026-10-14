@@ -45,7 +45,7 @@ The full business requirements are in [`docs/BRD.md`](docs/BRD.md), and the meas
 - **Unknown is not zero.** Missing nutrient values stay unknown, and totals are shown as a lower bound with a count of incomplete items. Days with no diary record are unknown, not zero intake.
 - **Money** is stored as integer minor units plus an ISO 4217 currency code. Early releases do no currency conversion.
 - **"Estimated food cost"** means consumption cost and is always labelled as an estimate, never as "spend". Actual spend comes only from purchase records.
-- **Units:** g and ml are canonical, and household measures are servings. Mass↔volume conversion needs a known density. An impossible conversion is rejected, never guessed.
+- **Units:** g and ml are canonical. Standard units such as mg, oz, lb, tsp, tbsp, fl oz, cups and gallons convert exactly to them, and food-specific measures such as "1 slice" are servings. Mass↔volume conversion needs a known density. An impossible conversion is rejected, never guessed.
 - **Snapshots:** a log entry keeps the nutrients and cost from the time it was logged, so editing a food or price never rewrites history.
 - **Dates** are the member's local calendar date.
 

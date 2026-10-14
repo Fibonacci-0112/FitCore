@@ -95,7 +95,7 @@ Summarized from [BRD §6](docs/BRD.md#6-business-rules). Follow them in domain l
 - **Days without a diary record are unknown**, never zero intake. Only days marked complete feed adaptive targets.
 - **Money** is integer minor units plus an ISO 4217 code. Never use floating-point money.
 - **"Estimated food cost"** is consumption cost, always labelled as an estimate and never as "spend". Actual spend comes only from purchase records.
-- **Units:** `g` and `ml` are canonical; household measures are servings. Mass↔volume conversion needs a known density. Reject an impossible conversion; never guess.
+- **Units:** `g` and `ml` are canonical. Standard mass and volume units (mg, kg, oz, lb; l, tsp, tbsp, fl oz, cup, pint, quart, gallon) convert exactly to them; a cup is the US customary 236.6 ml. Food-specific measures ("1 slice", "1 cup, chopped = 128 g") are servings. Mass↔volume conversion needs a known density. Reject an impossible conversion; never guess.
 - **Snapshots:** a log entry keeps its nutrients and cost from log time. Editing a food or price never rewrites history.
 - **Dates:** diary dates are the member's local calendar date.
 - **Targets:** Mifflin-St Jeor × activity factor. Soft limits (loss ≤ 1% of body weight per week, ≥ 1,200 kcal/day, protein 1.6 g/kg by default) can be overridden by the member after a warning, and the override is logged. The hard floor (initially < 800 kcal/day or a goal BMI < 18.5) blocks members and coaches; only a clinician can go past it, and the member is told. A coach target below a soft limit stays pending until the member accepts it.
