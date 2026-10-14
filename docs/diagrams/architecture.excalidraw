@@ -634,9 +634,9 @@
     {
       "id": "plat_label",
       "type": "text",
-      "x": 503.2,
+      "x": 481.2,
       "y": 325.0,
-      "width": 193.60000000000002,
+      "width": 237.60000000000002,
       "height": 60.0,
       "angle": 0,
       "strokeColor": "#1e1e1e",
@@ -658,13 +658,13 @@
       "updated": 1792000000000,
       "link": null,
       "locked": false,
-      "text": "FitCore.Platform\nauth, RLS session,\nrate limits, redaction",
+      "text": "FitCore.Platform\nvalidates JWT, RLS session,\nrate limits, redaction",
       "fontSize": 16,
       "fontFamily": 5,
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "plat",
-      "originalText": "FitCore.Platform\nauth, RLS session,\nrate limits, redaction",
+      "originalText": "FitCore.Platform\nvalidates JWT, RLS session,\nrate limits, redaction",
       "autoResize": true,
       "lineHeight": 1.25
     },
@@ -2207,12 +2207,12 @@
       "elbowed": false
     },
     {
-      "id": "a6",
+      "id": "a7",
       "type": "arrow",
-      "x": 560,
-      "y": 650,
-      "width": 0,
-      "height": 95,
+      "x": 90,
+      "y": 175,
+      "width": 530,
+      "height": 710,
       "angle": 0,
       "strokeColor": "#15803d",
       "backgroundColor": "transparent",
@@ -2224,19 +2224,12 @@
       "groupIds": [],
       "frameId": null,
       "index": null,
-      "roundness": {
-        "type": 2
-      },
+      "roundness": null,
       "seed": 1236970413,
       "version": 1,
       "versionNonce": 1029593810,
       "isDeleted": false,
-      "boundElements": [
-        {
-          "type": "text",
-          "id": "a6_label"
-        }
-      ],
+      "boundElements": null,
       "updated": 1792000000000,
       "link": null,
       "locked": false,
@@ -2246,8 +2239,20 @@
           0
         ],
         [
-          0,
-          95
+          -60,
+          0
+        ],
+        [
+          -60,
+          710
+        ],
+        [
+          470,
+          710
+        ],
+        [
+          470,
+          670
         ]
       ],
       "lastCommittedPoint": null,
@@ -2258,11 +2263,11 @@
       "elbowed": false
     },
     {
-      "id": "a6_label",
+      "id": "a7t",
       "type": "text",
-      "x": 546.8,
-      "y": 687.5,
-      "width": 26.400000000000002,
+      "x": 110,
+      "y": 890,
+      "width": 545.6,
       "height": 20.0,
       "angle": 0,
       "strokeColor": "#15803d",
@@ -2284,13 +2289,13 @@
       "updated": 1792000000000,
       "link": null,
       "locked": false,
-      "text": "JWT",
+      "text": "clients sign in with Supabase Auth, then call /v1 with its JWT",
       "fontSize": 16,
       "fontFamily": 5,
-      "textAlign": "center",
-      "verticalAlign": "middle",
-      "containerId": "a6",
-      "originalText": "JWT",
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "clients sign in with Supabase Auth, then call /v1 with its JWT",
       "autoResize": true,
       "lineHeight": 1.25
     }
