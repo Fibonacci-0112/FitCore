@@ -16,6 +16,7 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `docs/architecture-options.md` | Three architecture options compared against the NFRs, with a cost check |
 | `docs/decisions/` | Architecture decision records (ADRs), numbered `NNNN-title.md` |
 | `docs/spikes/` | Spike findings, one file per spike |
+| `docs/diagrams/` | Excalidraw diagrams of the ADR 0003 design (architecture, target workflow, data flow), listed in its README. Update a diagram when the design it shows changes |
 | `spikes/` | Throwaway spike code (.NET 10, Docker Compose or the Supabase CLI, Node for browser checks). Each spike has a README with run instructions. Not production code |
 | `FitCore.slnx` | The solution: everything under `src/` and `tests/` |
 | `src/FitCore.Domain/` | Shared rules (BRD §6). No I/O and no references |
