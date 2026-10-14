@@ -1161,7 +1161,7 @@
       "type": "arrow",
       "x": 620,
       "y": 770,
-      "width": 40,
+      "width": 20,
       "height": 0,
       "angle": 0,
       "strokeColor": "#1e1e1e",
@@ -1191,7 +1191,7 @@
           0
         ],
         [
-          40,
+          20,
           0
         ]
       ],
@@ -1205,10 +1205,10 @@
     {
       "id": "s5",
       "type": "rectangle",
-      "x": 660,
-      "y": 735,
-      "width": 190,
-      "height": 70,
+      "x": 640,
+      "y": 725,
+      "width": 230,
+      "height": 90,
       "angle": 0,
       "strokeColor": "#8b5cf6",
       "backgroundColor": "#d0bfff",
@@ -1240,10 +1240,10 @@
     {
       "id": "s5_label",
       "type": "text",
-      "x": 667.0,
-      "y": 750.0,
-      "width": 176.0,
-      "height": 40.0,
+      "x": 649.4,
+      "y": 740.0,
+      "width": 211.20000000000002,
+      "height": 60.0,
       "angle": 0,
       "strokeColor": "#1e1e1e",
       "backgroundColor": "transparent",
@@ -1264,13 +1264,13 @@
       "updated": 1792000000000,
       "link": null,
       "locked": false,
-      "text": "Targets: adaptive\n(complete days only)",
+      "text": "Progress: proposal if\n21+ days, 80%+ complete,\n8+ weigh-ins",
       "fontSize": 16,
       "fontFamily": 5,
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "s5",
-      "originalText": "Targets: adaptive\n(complete days only)",
+      "originalText": "Progress: proposal if\n21+ days, 80%+ complete,\n8+ weigh-ins",
       "autoResize": true,
       "lineHeight": 1.25
     },
@@ -1312,9 +1312,9 @@
     {
       "id": "m5_label",
       "type": "text",
-      "x": 106.39999999999999,
+      "x": 84.39999999999999,
       "y": 620.0,
-      "width": 167.20000000000002,
+      "width": 211.20000000000002,
       "height": 60.0,
       "angle": 0,
       "strokeColor": "#1e1e1e",
@@ -1336,13 +1336,13 @@
       "updated": 1792000000000,
       "link": null,
       "locked": false,
-      "text": "Member reviews\nsuggested target\n(accept or decline)",
+      "text": "Member reviews proposal;\nTargets applies it\nonly if accepted",
       "fontSize": 16,
       "fontFamily": 5,
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "m5",
-      "originalText": "Member reviews\nsuggested target\n(accept or decline)",
+      "originalText": "Member reviews proposal;\nTargets applies it\nonly if accepted",
       "autoResize": true,
       "lineHeight": 1.25
     },
@@ -1350,9 +1350,9 @@
       "id": "c9",
       "type": "arrow",
       "x": 755,
-      "y": 805,
+      "y": 815,
       "width": 565,
-      "height": 105,
+      "height": 115,
       "angle": 0,
       "strokeColor": "#15803d",
       "backgroundColor": "transparent",
@@ -1385,15 +1385,15 @@
         ],
         [
           0,
-          40
+          30
         ],
         [
           -565,
-          40
+          30
         ],
         [
           -565,
-          -105
+          -115
         ]
       ],
       "lastCommittedPoint": null,
