@@ -97,6 +97,15 @@ public sealed class TargetsTests
         Assert.Equal(error, GoalPlanner.Plan(current, goal, Today, pace).Error);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-0.01)]
+    public void Rejects_a_weekly_loss_limit_that_is_not_positive(decimal fraction)
+    {
+        var settings = new GuardrailSettings(MaxLossFractionPerWeek: fraction);
+        Assert.Equal(GoalPlanError.InvalidInput, GoalPlanner.Plan(80, 70, Today, new GoalPace.Rate(0.5m), settings).Error);
+    }
+
     public static TheoryData<string, ProposedTarget, SoftLimit[], HardLimit[]> Reports => new()
     {
         { "a sensible target", new ProposedTarget(2000, 130, -0.5m, 70), [], [] },
