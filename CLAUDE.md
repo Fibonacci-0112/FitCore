@@ -14,6 +14,7 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `docs/BRD.md` | Business requirements: roles, permission matrix, features, business rules, compliance |
 | `docs/NFR.md` | Measurable non-functional requirements, each with an ID such as `NFR-PRV-4` |
 | `docs/architecture-options.md` | Three architecture options compared against the NFRs, with a cost check |
+| `docs/implementation-plan.md` | Build order: the R1 PRs with acceptance criteria, later phases, open decisions |
 | `docs/decisions/` | Architecture decision records (ADRs), numbered `NNNN-title.md` |
 | `docs/spikes/` | Spike findings, one file per spike |
 | `docs/diagrams/` | Excalidraw diagrams of the ADR 0003 design (architecture, target workflow, data flow), listed in its README. Update a diagram when the design it shows changes |
@@ -42,7 +43,8 @@ CI lints every Markdown file and checks every link, including links to headings.
 
 ```sh
 npx --yes markdownlint-cli2@0.18.1 "**/*.md"   # the version CI's action uses
-lychee --include-fragments '**/*.md'           # https://lychee.cli.rs
+lychee --include-fragments '**/*.md' \
+  --remap 'https://github\.com/([^/]+)/([^/]+)/blob/(.+) https://raw.githubusercontent.com/$1/$2/$3'   # https://lychee.cli.rs, as CI runs it
 ```
 
 Use the pinned linter version: newer markdownlint releases add rules (such as MD060) that CI doesn't run, and that flag the existing files.
