@@ -36,7 +36,8 @@
   <!--
     The Supabase project the app signs members in with. Debug builds default to the local stack (supabase/README.md),
     which the Android emulator reaches at 10.0.2.2. Every other build must pass -p:SupabaseUrl=… and
-    -p:SupabasePublishableKey=…, so no release ships pointing at a developer's machine. A publishable key is public by
+    -p:SupabasePublishableKey=…, so no release ships pointing at a developer's machine, and such an app starts only with an
+    HTTPS address (MauiProgram, NFR-SEC-6). A publishable key is public by
     design and ships in every app; never pass a secret key.
   -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
@@ -52,6 +53,12 @@
   <ItemGroup>
     <AssemblyMetadata Include="SupabaseUrl" Value="$(SupabaseUrl)" />
     <AssemblyMetadata Include="SupabasePublishableKey" Value="$(SupabasePublishableKey)" />
+  </ItemGroup>
+
+  <!-- Debug-only App Transport Security exception for the local stack; Release keeps Apple's HTTPS-only default. -->
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <PartialAppManifest Include="Platforms\iOS\Debug.plist" Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'" />
+    <PartialAppManifest Include="Platforms\MacCatalyst\Debug.plist" Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'" />
   </ItemGroup>
 
   <ItemGroup>

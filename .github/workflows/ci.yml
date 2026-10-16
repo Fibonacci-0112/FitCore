@@ -53,7 +53,8 @@ jobs:
           dotnet build src/FitCore.Maui --no-restore -t:InstallAndroidDependencies -f net10.0-android
           -p:AndroidSdkDirectory="$ANDROID_HOME" -p:AcceptAndroidSDKLicenses=True
       - run: dotnet format FitCore.slnx --no-restore --verify-no-changes
-      # Release builds of FitCore.Maui need a Supabase project; CI's is the local stack the tests use.
+      # Release builds of FitCore.Maui need a Supabase project. CI only builds the app, so the local stack stands in;
+      # a Release app refuses to start without an HTTPS address (NFR-SEC-6).
       - run: >-
           dotnet build FitCore.slnx --no-restore --configuration Release
           -p:SupabaseUrl=http://127.0.0.1:54321 -p:SupabasePublishableKey=sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
