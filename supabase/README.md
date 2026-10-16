@@ -71,7 +71,7 @@ The development project is `FitCore-Dev-DB` (implementation plan §2). For each 
 3. Connect the API through Supavisor session mode (port 5432 on the pooler host, user `fitcore_api.<ref>`) or directly. `FitCore.Platform` refuses transaction mode (port 6543) and `No Reset On Close` ([RLS spike §4](../docs/spikes/rls-connection-pooling.md#4-rules-for-the-api) rule 5).
 4. Keep the Data API's exposed schemas to `public` and `graphql_public`, and keep "Enable automatic RLS" off ([implementation plan §3.1](../docs/implementation-plan.md#31-database)).
 5. Give fitcore-app the project URL and a secret API key as `Supabase:Url` and `Supabase:SecretKey`, from the secret store, and apply the [Auth settings](#auth-settings) below.
-6. Build the device app against the project with `-p:SupabaseUrl=https://<ref>.supabase.co -p:SupabasePublishableKey=<key>`, using the project's publishable key. That key ships inside the app, which is what it is for; a secret key never goes into a client build (NFR-SEC-5). Its default is the local stack.
+6. Build the device app against the project with `-p:SupabaseUrl=https://<ref>.supabase.co -p:SupabasePublishableKey=<key>`, using the project's publishable key. That key ships inside the app, which is what it is for; a secret key never goes into a client build (NFR-SEC-5). Debug builds default to the local stack; any other build fails without both settings.
 
 ## Auth settings
 

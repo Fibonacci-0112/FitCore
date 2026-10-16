@@ -34,15 +34,20 @@
   </PropertyGroup>
 
   <!--
-    The Supabase project the app signs members in with. The defaults are the local stack (supabase/README.md), which
-    the Android emulator reaches at 10.0.2.2. Builds for a hosted project pass -p:SupabaseUrl=… and
-    -p:SupabasePublishableKey=…. A publishable key is public by design and ships in every app; never pass a secret key.
+    The Supabase project the app signs members in with. Debug builds default to the local stack (supabase/README.md),
+    which the Android emulator reaches at 10.0.2.2. Every other build must pass -p:SupabaseUrl=… and
+    -p:SupabasePublishableKey=…, so no release ships pointing at a developer's machine. A publishable key is public by
+    design and ships in every app; never pass a secret key.
   -->
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <SupabaseUrl Condition="'$(SupabaseUrl)' == '' and $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">http://10.0.2.2:54321</SupabaseUrl>
     <SupabaseUrl Condition="'$(SupabaseUrl)' == ''">http://127.0.0.1:54321</SupabaseUrl>
     <SupabasePublishableKey Condition="'$(SupabasePublishableKey)' == ''">sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH</SupabasePublishableKey>
   </PropertyGroup>
+
+  <Target Name="RequireSupabaseSettings" BeforeTargets="Build" Condition="'$(SupabaseUrl)' == '' or '$(SupabasePublishableKey)' == ''">
+    <Error Text="A $(Configuration) build of FitCore.Maui needs -p:SupabaseUrl=… and -p:SupabasePublishableKey=… (supabase/README.md, Hosted projects)." />
+  </Target>
 
   <ItemGroup>
     <AssemblyMetadata Include="SupabaseUrl" Value="$(SupabaseUrl)" />

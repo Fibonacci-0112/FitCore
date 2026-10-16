@@ -53,7 +53,10 @@ jobs:
           dotnet build src/FitCore.Maui --no-restore -t:InstallAndroidDependencies -f net10.0-android
           -p:AndroidSdkDirectory="$ANDROID_HOME" -p:AcceptAndroidSDKLicenses=True
       - run: dotnet format FitCore.slnx --no-restore --verify-no-changes
-      - run: dotnet build FitCore.slnx --no-restore --configuration Release
+      # Release builds of FitCore.Maui need a Supabase project; CI's is the local stack the tests use.
+      - run: >-
+          dotnet build FitCore.slnx --no-restore --configuration Release
+          -p:SupabaseUrl=http://127.0.0.1:54321 -p:SupabasePublishableKey=sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
       # FitCore.Platform.Tests, FitCore.Client.Tests and the module test projects run against the local stack, with
       # migrations and seed applied: Postgres, plus Auth, its gateway and the mail catcher for the sign-up tests. The rest
       # isn't needed.

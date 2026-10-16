@@ -78,7 +78,7 @@ Every feature PR builds on these. Each is introduced by the first PR that needs 
 
 - `FitCore.Client.Core` holds the view models (CommunityToolkit.Mvvm 8.4.2 or later) and the typed API client. Commands update the screen optimistically, `await Task.Yield()`, then call the API ([Blazor spike §5](spikes/blazor-prerendering-web-vitals.md#5-rules-for-the-build)). No business logic lives in UI code (NFR-MNT-4).
 - `FitCore.Web.Client` pages prerender on the server and hydrate with WebAssembly. Prerendered data travels in `[PersistentState]`, and actions stay disabled until `RendererInfo.IsInteractive`. Member pages send `Cache-Control: no-store`.
-- `FitCore.Maui` is the XAML app for iOS, Android, Windows and macOS (NFR-CMP-1). The Supabase URL and publishable key are build properties, defaulting to the local stack.
+- `FitCore.Maui` is the XAML app for iOS, Android, Windows and macOS (NFR-CMP-1). The Supabase URL and publishable key are build properties; Debug builds default to the local stack, and other builds must pass both.
 - Strings live in resource files (NFR-L10N-2). Units, currency and time zone come from the profile (NFR-L10N-3).
 - Accessibility is built in from the first screen: WCAG 2.2 AA on the web, screen readers, 200% text and reduce-motion everywhere (NFR-ACC-1 to NFR-ACC-4, NFR-ACC-6).
 

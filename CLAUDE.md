@@ -79,7 +79,7 @@ dotnet run --project src/FitCore.AppHost         # or everything: the Supabase s
 dotnet build src/FitCore.Maui -t:Run -f net10.0-android   # the device app on a running emulator, against the local stack
 ```
 
-`FitCore.Maui` signs members in against the local stack unless the build says otherwise: pass `-p:SupabaseUrl=…` and `-p:SupabasePublishableKey=…` for a hosted project. Never pass a secret key to a client build.
+Debug builds of `FitCore.Maui` sign members in against the local stack. Any other configuration, including a Release build of the solution, must pass `-p:SupabaseUrl=…` and `-p:SupabasePublishableKey=…`, or the build fails. Never pass a secret key to a client build.
 
 After changing a migration or `seed.sql`, run `npx --yes supabase@2.121.0 db reset`. Use the same pinned CLI version as CI.
 
