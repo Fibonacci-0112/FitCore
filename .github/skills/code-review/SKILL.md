@@ -113,6 +113,8 @@ Don't report a finding you can't tie to a concrete failure or a written rule. Do
 - **View-model commands** `await Task.Yield()` after the optimistic update and before calling the API. Actions stay disabled until `RendererInfo.IsInteractive`.
 - **Serialization** uses source-generated JSON (`JsonSerializerContext`). No AOT, `InvariantGlobalization` or `wasm-tools` without a measurement that justifies it. CommunityToolkit.Mvvm is 8.4.2 or later.
 - **On-device health data** is stored in Keychain, Keystore, DPAPI or an encrypted database (NFR-SEC-8).
+- **Device sign-in.** The MAUI app reaches Supabase Auth only through `FitCore.Client.Auth` (`Supabase.Gotrue`), with the project's publishable key. `Supabase.Gotrue` or `FitCore.Client.Auth` in anything the Blazor client is built from, or a secret key in a client build, is blocking ([ADR 0005](../../../docs/decisions/0005-web-session.md)). Auth failures reach the view model as a status, never as an exception with the response body.
+- **XAML** bindings declare `x:DataType`. Pages bind to `FitCore.Client.Core` view models; code-behind only wires up the view (for example, screen-reader announcements).
 - **Accessibility.** Every control has an accessible name; touch targets are ≥ 44×44 pt; color is never the only signal, for example for incomplete or unpriced items; motion respects "reduce motion" (NFR-ACC-1..6).
 - **Strings** are in resource files, not hard-coded (NFR-L10N-2). Numbers, dates and currency use the member's locale and units.
 

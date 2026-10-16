@@ -176,6 +176,7 @@ src/
   FitCore.Domain/               shared rules: units, totals, cost, targets, guardrails (no I/O)
   FitCore.Contracts/            request/response DTOs and the typed API client, versioned (/v1)
   FitCore.Client.Core/          view models (MVVM), encrypted offline store, sync engine
+  FitCore.Client.Auth/          Supabase Auth for the device apps (Supabase.Gotrue); never in the browser
   FitCore.Maui/                 XAML app, HealthKit / Health Connect bindings
   FitCore.Web/                  Blazor Web App host (static SSR + prerendering), also hosts the API
   FitCore.Web.Client/           Blazor WebAssembly interactive components
@@ -201,6 +202,7 @@ tests/
   FitCore.Domain.Tests/         table tests for BRD §6, ≥ 90% coverage (NFR-MNT-1)
   FitCore.Modules.*.Tests/      module tests against a local Supabase stack
   FitCore.Architecture.Tests/   module boundaries; no business logic in UI projects (NFR-MNT-4)
+  FitCore.Client.Tests/         shared view models, and the Auth wrapper against a local Supabase stack
   FitCore.Load.Tests/           3× peak load test (NFR-SCL-1)
 ```
 

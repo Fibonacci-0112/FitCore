@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Email sign-up (implementation plan PR 4). The rules and messages live in SignUpViewModel, shared with every platform. -->
+<ContentPage x:Class="FitCore.Maui.Pages.SignUpPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:accounts="clr-namespace:FitCore.Client.Core.Accounts;assembly=FitCore.Client.Core"
+             x:DataType="accounts:SignUpViewModel"
+             Title="{x:Static accounts:AccountStrings.SignUpTitle}"
+             Shell.NavBarIsVisible="False">
+
+    <!-- Scrolls, so nothing is clipped at 200% text size (NFR-ACC-3). -->
+    <ScrollView>
+        <VerticalStackLayout Padding="16,32" Spacing="8" MaximumWidthRequest="560">
+
+            <VerticalStackLayout Spacing="8" IsVisible="{Binding IsFormVisible}">
+                <Label Text="{x:Static accounts:AccountStrings.SignUpTitle}" Style="{StaticResource Headline}" />
+
+                <Label Text="{x:Static accounts:AccountStrings.NameLabel}" Margin="0,16,0,0" />
+                <Entry Text="{Binding DisplayName}"
+                       MaxLength="80"
+                       Keyboard="Text"
+                       IsTextPredictionEnabled="False"
+                       SemanticProperties.Description="{x:Static accounts:AccountStrings.NameLabel}" />
+
+                <Label Text="{x:Static accounts:AccountStrings.EmailLabel}" Margin="0,8,0,0" />
+                <Entry Text="{Binding Email}"
+                       MaxLength="254"
+                       Keyboard="Email"
+                       IsSpellCheckEnabled="False"
+                       IsTextPredictionEnabled="False"
+                       SemanticProperties.Description="{x:Static accounts:AccountStrings.EmailLabel}" />
+
+                <Label Text="{x:Static accounts:AccountStrings.PasswordLabel}" Margin="0,8,0,0" />
+                <Entry Text="{Binding Password}"
+                       MaxLength="64"
+                       IsPassword="True"
+                       IsSpellCheckEnabled="False"
+                       IsTextPredictionEnabled="False"
+                       SemanticProperties.Description="{x:Static accounts:AccountStrings.PasswordLabel}"
+                       SemanticProperties.Hint="{x:Static accounts:AccountStrings.PasswordHelp}" />
+                <Label Text="{x:Static accounts:AccountStrings.PasswordHelp}" Style="{StaticResource Help}" />
+
+                <Label Text="{x:Static accounts:AccountStrings.BirthDateLabel}" Margin="0,8,0,0" />
+                <DatePicker Date="{Binding BirthDate}"
+                            MaximumDate="{Binding Today}"
+                            SemanticProperties.Description="{x:Static accounts:AccountStrings.BirthDateLabel}"
+                            SemanticProperties.Hint="{x:Static accounts:AccountStrings.BirthDateHelp}" />
+                <Label Text="{x:Static accounts:AccountStrings.BirthDateHelp}" Style="{StaticResource Help}" />
+
+                <Label Text="{Binding Error}"
+                       IsVisible="{Binding HasError}"
+                       Style="{StaticResource Error}"
+                       Margin="0,8,0,0" />
+
+                <Button Text="{x:Static accounts:AccountStrings.CreateAccount}"
+                        Command="{Binding SignUpCommand}"
+                        Margin="0,16,0,0" />
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                   IsVisible="{Binding IsBusy}"
+                                   SemanticProperties.Description="{x:Static accounts:AccountStrings.CreatingAccount}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="16" IsVisible="{Binding IsConfirmationSent}">
+                <Label Text="{x:Static accounts:AccountStrings.CheckEmailTitle}" Style="{StaticResource Headline}" />
+                <Label Text="{x:Static accounts:AccountStrings.CheckEmailBody}" />
+                <Label Text="{x:Static accounts:AccountStrings.CheckEmailHelp}" Style="{StaticResource Help}" />
+                <Button Text="{x:Static accounts:AccountStrings.SignUpAgain}"
+                        Command="{Binding SignUpAgainCommand}" />
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

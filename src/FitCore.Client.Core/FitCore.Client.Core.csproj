@@ -3,6 +3,10 @@
   <!-- View models, the encrypted offline store and the sync engine, shared by the MAUI app and the Blazor client. -->
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FitCore.Contracts\FitCore.Contracts.csproj" />
     <ProjectReference Include="..\FitCore.Domain\FitCore.Domain.csproj" />
   </ItemGroup>

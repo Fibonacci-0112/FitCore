@@ -6,7 +6,7 @@ Guidance for Claude Code in this repository. Read the BRD and the NFRs before an
 
 FitCore is a health, fitness and nutrition app. Members plan targets and track nutrition (including estimated food cost), training, body metrics and wellness, with optional support from a coach or clinician. It's multi-user from day one, and every member's data is private by default.
 
-The repository holds the requirements and architecture documents, throwaway spike code under `spikes/`, and the start of the application: the solution scaffold from [`architecture-options.md` §B.2](docs/architecture-options.md#b2-project-structure-and-boundaries). The projects build and the tests run. `FitCore.Domain` holds the BRD §6 rules, `supabase/` holds the R1 tables with their RLS policies, audit triggers and pgTAP tests, and `FitCore.Platform` holds the unit of work and member authentication. The first feature is email sign-up, sign-in and sign-out on the web, with the 18+ gate (R1 PR 4, first part).
+The repository holds the requirements and architecture documents, throwaway spike code under `spikes/`, and the start of the application: the solution scaffold from [`architecture-options.md` §B.2](docs/architecture-options.md#b2-project-structure-and-boundaries). The projects build and the tests run. `FitCore.Domain` holds the BRD §6 rules, `supabase/` holds the R1 tables with their RLS policies, audit triggers and pgTAP tests, and `FitCore.Platform` holds the unit of work and member authentication. The first feature is email sign-up, sign-in and sign-out on the web, with the 18+ gate (R1 PR 4, first part), and the MAUI app's shell with email sign-up (second part).
 
 | Path | Contents |
 |---|---|
@@ -23,14 +23,17 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `FitCore.slnx` | The solution: everything under `src/` and `tests/` |
 | `src/FitCore.Domain/` | Shared rules (BRD §6): quantities and units, nutrient totals, money and estimated cost, diary snapshots, local dates, targets and guardrails. No I/O and no references |
 | `src/FitCore.Contracts/` | Versioned DTOs and the typed API client (`/v1`) |
-| `src/FitCore.Client.Core/` | View models, offline store and sync engine, shared by the MAUI app and the Blazor client |
+| `src/FitCore.Client.Core/` | View models, offline store and sync engine, shared by the MAUI app and the Blazor client. `Accounts/` holds the sign-up view model, the `IMemberAccounts` interface and the account screens' strings (`AccountStrings.resx`) |
+| `src/FitCore.Client.Auth/` | Supabase Auth for the device apps: `Supabase.Gotrue` behind a thin wrapper, called with the project's publishable key. Only `FitCore.Maui` references it; the browser never gets it (ADR 0005) |
 | `src/FitCore.AppHost/` | .NET Aspire AppHost for local development: starts the Supabase CLI stack, then `fitcore-app` and `fitcore-worker`. Never deployed |
 | `src/FitCore.Platform/` | Cross-cutting server code: the `IModule` host, the database unit of work (`Data/`, the only way to run SQL as a caller), and member authentication (`Auth/`: the Supabase Auth client, token validation, the session cookie and the cross-site write checks of ADR 0005). Rate limits and redacted logging come later |
 | `src/FitCore.Web/` | `fitcore-app`: Blazor Web App host, `/v1` API and `/health` |
 | `src/FitCore.Web.Client/` | Blazor WebAssembly pages, prerendered by `FitCore.Web` |
+| `src/FitCore.Maui/` | The .NET MAUI XAML app for Android, iOS, macOS and Windows: the shell and email sign-up so far. The Supabase URL and publishable key are build properties that default to the local stack |
 | `src/FitCore.Worker/` | `fitcore-worker`: background host |
 | `src/Modules/` | One project per module in ADR 0003, each with a `<Name>Module` entry point. `Modules.targets` and `ModuleCatalog.cs` load every module into both hosts |
-| `tests/FitCore.Architecture.Tests/` | Module boundaries and project layering (NFR-MNT-4) |
+| `tests/FitCore.Architecture.Tests/` | Module boundaries and project layering (NFR-MNT-4), including that browser code never reaches `Supabase.Gotrue` |
+| `tests/FitCore.Client.Tests/` | The sign-up view model, and `FitCore.Client.Auth` against the local Supabase stack with the publishable key: the profile, the 18+ gate, Auth's own refusals and the confirmation email |
 | `tests/FitCore.Domain.Tests/` | Table tests for every BRD §6 rule in `FitCore.Domain`, with a 90% line-coverage gate (NFR-MNT-1) |
 | `tests/coverage-gate.py` | Fails CI when a package's line coverage in a Cobertura report is below a minimum |
 | `tests/FitCore.Testing/` | Shared fixture for the database test projects: the local Supabase database, the API's `FitCoreDatabase`, and test members that are deleted afterwards |
@@ -38,7 +41,7 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `tests/FitCore.Modules.<Name>.Tests/` | A module's schema and code against the local Supabase stack, through the real unit of work. `FitCore.Modules.Identity.Tests` drives sign-up, the 18+ gate, sign-in and sign-out through fitcore-app against the local Auth and its mail catcher |
 | `tests/FitCore.Web.Tests/` | The web host's pipeline, in memory: API errors as problem details, `no-store` pages, prerendering, and the web session against a fake Supabase Auth (cookie, refresh, outages, cross-site writes, sign-out) |
 | `Directory.Build.props`, `Directory.Packages.props` | Shared build settings (warnings are errors) and central package versions. `spikes/` opts out of both |
-| `.github/workflows/ci.yml` | CI: Markdown lint, link check, solution format check, build and test (against a local Supabase database), pgTAP, and spike build |
+| `.github/workflows/ci.yml` | CI: Markdown lint, link check, solution format check, build (with the MAUI app for Android) and test (against a local Supabase database), pgTAP, and spike build |
 | `.github/skills/code-review/SKILL.md` | GitHub Copilot code-review skill: checklists drawn from the BRD, NFRs, ADRs and spike rules. Update it when those rules change. It is also the checklist for the Claude Code and Codex skills below |
 | `.claude/skills/fitcore-review/SKILL.md` | Claude Code review skill (`/fitcore-review`): runs the Copilot skill's checklist with local checks and verified findings |
 | `.agents/skills/fitcore-review/SKILL.md` | Codex review skill (`$fitcore-review`): the same runner for Codex |
@@ -56,9 +59,12 @@ lychee --include-fragments '**/*.md' \
 
 Use the pinned linter version: newer markdownlint releases add rules (such as MD060) that CI doesn't run, and that flag the existing files.
 
-The solution needs the .NET 10 SDK (`global.json`). `FitCore.Platform.Tests`, the module test projects and the pgTAP suite also need the local Supabase stack, which needs Docker. CI runs these, and a PR must pass them:
+The solution needs the .NET 10 SDK (`global.json`) and the MAUI Android workload, which builds on any OS. Android also needs JDK 17 or later and the Android SDK; iOS and macOS build only on a Mac, and Windows only on Windows. `FitCore.Platform.Tests`, `FitCore.Client.Tests`, the module test projects and the pgTAP suite also need the local Supabase stack, which needs Docker. CI runs these, and a PR must pass them:
 
 ```sh
+dotnet workload install maui-android             # once per SDK; FitCore.Maui is in the solution
+dotnet build src/FitCore.Maui -t:InstallAndroidDependencies -f net10.0-android \
+  -p:AndroidSdkDirectory=$HOME/android-sdk -p:AcceptAndroidSDKLicenses=True   # once, if you have no Android SDK yet; then set ANDROID_HOME to it
 npx --yes supabase@2.121.0 start                 # the local stack: Postgres on 54322, Auth on 54321, mail on 54324
 export Supabase__SecretKey=$(npx --yes supabase@2.121.0 status -o env | sed -n 's/^SECRET_KEY="\(.*\)"$/\1/p')   # fitcore-app's Auth key, never committed
 npx --yes supabase@2.121.0 test db               # the pgTAP suite (NFR-MNT-2)
@@ -70,7 +76,10 @@ dotnet test --project tests/FitCore.Domain.Tests --coverage --coverage-output-fo
 python3 tests/coverage-gate.py TestResults/domain.cobertura.xml FitCore.Domain 90   # NFR-MNT-1
 dotnet run --project src/FitCore.Web             # the web app and API, https://localhost:7180
 dotnet run --project src/FitCore.AppHost         # or everything: the Supabase stack, the app and the worker
+dotnet build src/FitCore.Maui -t:Run -f net10.0-android   # the device app on a running emulator, against the local stack
 ```
+
+Debug builds of `FitCore.Maui` sign members in against the local stack. Any other configuration, including a Release build of the solution, must pass `-p:SupabaseUrl=…` and `-p:SupabasePublishableKey=…`, or the build fails, and a non-Debug app refuses to start unless the URL is HTTPS (NFR-SEC-6). Never pass a secret key to a client build.
 
 After changing a migration or `seed.sql`, run `npx --yes supabase@2.121.0 db reset`. Use the same pinned CLI version as CI.
 
@@ -89,7 +98,7 @@ dotnet build spikes/blazor-web-vitals/BlazorSpike
 - **Backend:** a modular monolith on ASP.NET Core (.NET 10 LTS), with Supabase for Postgres, Auth, Storage and RLS. This is **accepted** in [ADR 0003](docs/decisions/0003-modular-monolith.md) (2026-10-13). Its follow-up spikes come before the solution scaffold.
 - **Database identity:** each unit of work applies the caller's identity with `SET LOCAL ROLE authenticated` and `set_config('request.jwt.claims', …, true)` only, never session-level `SET`. The API connects through Supavisor session mode or directly, not transaction mode ([spike findings](docs/spikes/rls-connection-pooling.md#4-rules-for-the-api)).
 - **Web rendering:** every Blazor page prerenders on the server and hydrates with WebAssembly, with prerendered data carried by `[PersistentState]`. No WebAssembly-only routes, no Interactive Server or Auto. View-model commands `await Task.Yield()` after the optimistic update and before calling the API ([spike findings](docs/spikes/blazor-prerendering-web-vitals.md#5-rules-for-the-build)).
-- **Sign-in:** email/password, Google, Microsoft and Sign in with Apple, through Supabase Auth, every method on every platform. Hosted Auth settings are in [`supabase/README.md`](supabase/README.md#auth-settings).
+- **Sign-in:** email/password, Google, Microsoft and Sign in with Apple, through Supabase Auth, every method on every platform. Hosted Auth settings are in [`supabase/README.md`](supabase/README.md#auth-settings). The MAUI app calls Supabase Auth itself through `FitCore.Client.Auth`, with the project's publishable key; the web signs in on the server (below).
 - **Web session:** the server signs the member in and keeps the Supabase session in an encrypted `__Host-` cookie (HttpOnly, Secure, `SameSite=Lax`). No token reaches WebAssembly, JavaScript or browser storage. Bearer (MAUI) and cookie (web) callers get the same identity and RLS claims. Every cookie-authenticated `/v1` write needs an antiforgery header and a same-origin `Origin`; `GET` never changes state, and `/v1` sends no CORS headers ([ADR 0005](docs/decisions/0005-web-session.md)).
 - **MFA:** TOTP, offered to everyone and required for clinicians and admins. "Required" is enforced in the API and in RLS by checking `aal2`, since Supabase has no per-role switch. Passkey sign-in counts as a single factor ([spike findings](docs/spikes/apple-sign-in-and-mfa.md#4-rules-for-the-build)).
 
@@ -97,7 +106,9 @@ dotnet build spikes/blazor-web-vitals/BlazorSpike
 
 - **Modules** expose only their `<Name>Module` class (an `IModule`) and types in the `FitCore.Modules.<Name>.Contracts` namespace. Everything else is `internal`. `InternalsVisibleTo` is allowed only for the module's own test project. The architecture tests enforce this.
 - **A new module** needs an ADR change first, then a project under `src/Modules/` and an entry in `ModuleCatalog.cs`. Its schema is its name in snake case.
-- **Client projects** (`FitCore.Domain`, `FitCore.Contracts`, `FitCore.Client.Core`, `FitCore.Web.Client`) never reference modules, `FitCore.Platform`, the hosts or Npgsql.
+- **Client projects** (`FitCore.Domain`, `FitCore.Contracts`, `FitCore.Client.Core`, `FitCore.Client.Auth`, `FitCore.Web.Client`, `FitCore.Maui`) never reference modules, `FitCore.Platform`, the hosts or Npgsql.
+- **`Supabase.Gotrue`** lives only in `FitCore.Client.Auth`, which only `FitCore.Maui` references. Nothing the Blazor client is built from may reach either (ADR 0005).
+- **Device app strings** live in resource files such as `AccountStrings.resx` (NFR-L10N-2), and XAML binds with `x:DataType`.
 - **Package versions** go in `Directory.Packages.props`, never in a project file.
 - **Database access** goes through `FitCoreDatabase` in `FitCore.Platform`: a `UnitOfWork` for writes and multi-statement reads, `ReadAsync` for single-trip reads. Never set the role or claims yourself; an architecture test fails on any session-level `SET ROLE` or `set_config(…, false)` under `src/` or `supabase/`.
 
