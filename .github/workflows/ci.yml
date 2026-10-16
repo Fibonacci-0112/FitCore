@@ -48,7 +48,7 @@ jobs:
       - run: dotnet restore FitCore.slnx
       - run: dotnet format FitCore.slnx --no-restore --verify-no-changes
       - run: dotnet build FitCore.slnx --no-restore --configuration Release
-      # FitCore.Platform.Tests runs the unit of work against the local database, with migrations and seed applied.
+      # FitCore.Platform.Tests and the module test projects run against the local database, with migrations and seed applied.
       - run: supabase db start
       - run: dotnet test --solution FitCore.slnx --no-build --configuration Release
       - name: Domain coverage gate (NFR-MNT-1)

@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\FitCore.Platform\FitCore.Platform.csproj" />
+    <ProjectReference Include="..\FitCore.Testing\FitCore.Testing.csproj" />
   </ItemGroup>
 
 </Project>

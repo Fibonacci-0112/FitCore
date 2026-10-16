@@ -6,7 +6,7 @@ Guidance for Claude Code in this repository. Read the BRD and the NFRs before an
 
 FitCore is a health, fitness and nutrition app. Members plan targets and track nutrition (including estimated food cost), training, body metrics and wellness, with optional support from a coach or clinician. It's multi-user from day one, and every member's data is private by default.
 
-The repository holds the requirements and architecture documents, throwaway spike code under `spikes/`, and the start of the application: the solution scaffold from [`architecture-options.md` §B.2](docs/architecture-options.md#b2-project-structure-and-boundaries). The projects build and the tests run. `FitCore.Domain` holds the BRD §6 rules, and `supabase/` and `FitCore.Platform` hold the database foundation (module schemas, the `fitcore_api` role, the unit of work), but no features exist yet.
+The repository holds the requirements and architecture documents, throwaway spike code under `spikes/`, and the start of the application: the solution scaffold from [`architecture-options.md` §B.2](docs/architecture-options.md#b2-project-structure-and-boundaries). The projects build and the tests run. `FitCore.Domain` holds the BRD §6 rules, `supabase/` holds the R1 tables with their RLS policies, audit triggers and pgTAP tests, and `FitCore.Platform` holds the unit of work, but no features exist yet.
 
 | Path | Contents |
 |---|---|
@@ -19,7 +19,7 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `docs/spikes/` | Spike findings, one file per spike |
 | `docs/diagrams/` | Excalidraw diagrams of the ADR 0003 design (architecture, target workflow, data flow), listed in its README. Update a diagram when the design it shows changes |
 | `spikes/` | Throwaway spike code (.NET 10, Docker Compose or the Supabase CLI, Node for browser checks). Each spike has a README with run instructions. Not production code |
-| `supabase/` | The only source of schema: `config.toml` for the local stack, forward-only `migrations/`, the local-only `seed.sql`, and the pgTAP suite in `tests/` with the six-actor helper. See its README |
+| `supabase/` | The only source of schema: `config.toml` for the local stack, forward-only `migrations/` (the foundation, then one per module for the R1 tables), the local-only `seed.sql`, and the pgTAP suite in `tests/` with the six-actor helper. See its README |
 | `FitCore.slnx` | The solution: everything under `src/` and `tests/` |
 | `src/FitCore.Domain/` | Shared rules (BRD §6): quantities and units, nutrient totals, money and estimated cost, diary snapshots, local dates, targets and guardrails. No I/O and no references |
 | `src/FitCore.Contracts/` | Versioned DTOs and the typed API client (`/v1`) |
@@ -33,7 +33,9 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `tests/FitCore.Architecture.Tests/` | Module boundaries and project layering (NFR-MNT-4) |
 | `tests/FitCore.Domain.Tests/` | Table tests for every BRD §6 rule in `FitCore.Domain`, with a 90% line-coverage gate (NFR-MNT-1) |
 | `tests/coverage-gate.py` | Fails CI when a package's line coverage in a Cobertura report is below a minimum |
+| `tests/FitCore.Testing/` | Shared fixture for the database test projects: the local Supabase database, the API's `FitCoreDatabase`, and test members that are deleted afterwards |
 | `tests/FitCore.Platform.Tests/` | The unit of work against the local Supabase database: no identity fails with 42501, RLS applies to the caller, and no identity outlives its transaction |
+| `tests/FitCore.Modules.<Name>.Tests/` | A module's schema and code against the local Supabase database, through the real unit of work. `FitCore.Modules.Nutrition.Tests` is the first |
 | `tests/FitCore.Web.Tests/` | The web host's pipeline, in memory: API errors as problem details, `no-store` pages, prerendering |
 | `Directory.Build.props`, `Directory.Packages.props` | Shared build settings (warnings are errors) and central package versions. `spikes/` opts out of both |
 | `.github/workflows/ci.yml` | CI: Markdown lint, link check, solution format check, build and test (against a local Supabase database), pgTAP, and spike build |
@@ -54,7 +56,7 @@ lychee --include-fragments '**/*.md' \
 
 Use the pinned linter version: newer markdownlint releases add rules (such as MD060) that CI doesn't run, and that flag the existing files.
 
-The solution needs the .NET 10 SDK (`global.json`). `FitCore.Platform.Tests` and the pgTAP suite also need the local Supabase database, which needs Docker. CI runs these, and a PR must pass them:
+The solution needs the .NET 10 SDK (`global.json`). `FitCore.Platform.Tests`, the module test projects and the pgTAP suite also need the local Supabase database, which needs Docker. CI runs these, and a PR must pass them:
 
 ```sh
 npx --yes supabase@2.121.0 db start              # local Postgres on 54322, with migrations and seed applied
@@ -115,7 +117,8 @@ Summarized from [BRD §6](docs/BRD.md#6-business-rules). Follow them in domain l
 
 ## Privacy and security rules
 
-- **RLS on every private table**, with pgTAP tests for each actor: owner, other member, grantee in scope, grantee out of scope, revoked grantee and admin (NFR-PRV-1, NFR-PRV-2).
+- **RLS on every private table**, with pgTAP tests for each actor: owner, other member, grantee in scope, grantee out of scope, revoked grantee and admin (NFR-PRV-1, NFR-PRV-2). Grant-aware policies call `care.has_grant(member_id, scope)`; in R1 the `nutrition` scope covers the diary and targets, and `body_metrics` covers weigh-ins.
+- **Shared catalog rows** (`owner_id` null) are written only by the `fitcore_catalog_import` login role, never by `fitcore_api` or `authenticated`.
 - **Professionals reach member data only through active grants**, exactly as the [permission matrix](docs/BRD.md#32-permission-matrix) says. They write only targets, assigned plans, comments, messages and check-in responses. Revocation takes effect on the next request (NFR-PRV-4).
 - **Audit** every grant change, professional edit, guardrail override and admin action in an append-only log (NFR-AUD-1..3).
 - **Admins never read member diaries**, measurements, photos, wellness data or messages (NFR-PRV-5).

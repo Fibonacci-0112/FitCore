@@ -25,8 +25,8 @@ This plan turns the requirements and the accepted architecture into a build orde
 
 - **Done:** ADR 0003; the RLS and Blazor spikes; the render-mode comparison; the solution scaffold (`FitCore.slnx`, 12 empty modules, both hosts, architecture tests and pipeline tests in CI).
 - **Partly done:** the auth spike. The on-device Sign in with Apple test is still to run ([auth spike §5](spikes/apple-sign-in-and-mfa.md#5-device-test-plan-for-sign-in-with-apple)).
-- **Not started:** the cost model (ADR 0003 follow-up 4). Still missing from the scaffold (follow-up 5): `FitCore.Maui`, the module test projects and `FitCore.Load.Tests`.
-- **R1 progress:** [PR 1](#pr-1-domain-library), the domain library with `FitCore.Domain.Tests` and its coverage gate, is done. [PR 2](#pr-2-database-foundation), the database foundation, is in review.
+- **Not started:** the cost model (ADR 0003 follow-up 4). Still missing from the scaffold (follow-up 5): `FitCore.Maui`, the module test projects other than Nutrition's, and `FitCore.Load.Tests`.
+- **R1 progress:** [PR 1](#pr-1-domain-library), the domain library with `FitCore.Domain.Tests` and its coverage gate, and [PR 2](#pr-2-database-foundation), the database foundation, are done. [PR 3](#pr-3-r1-schema-and-rls), the R1 schema and RLS, is in review.
 - **Environments:** the first hosted Supabase project exists: `FitCore-Dev-DB` in the `Fibonacci-0112` organization (`https://apauhqfldklnmqthubno.supabase.co`, Postgres 17, `us-west-2`). It is the shared development and staging database for R1. Production is a separate project, created in [PR 9](#pr-9-beta-environments-and-release).
 
 ## 3. Foundations
@@ -43,6 +43,7 @@ Every feature PR builds on these. Each is introduced by the first PR that needs 
   - a six-actor helper for owner, other member, grantee in scope, grantee out of scope, revoked grantee and admin (NFR-PRV-2);
   - a test that the `fitcore_api` login role has no table grants and can only switch to `authenticated` ([RLS spike §5](spikes/rls-connection-pooling.md#5-open-points)).
 - Every migration ships with its pgTAP tests (NFR-MNT-2).
+- A module writes only its own schema. Policies may read another schema only to decide visibility: `care.has_grant()` for grants, and Nutrition's check that a food is one the member can see in `catalog`. Foreign keys may point into another schema, as diary entries and prices point to `catalog.foods`. Audit triggers write `audit.events` only through `audit.append()`.
 
 ### 3.2 Database identity
 
@@ -70,7 +71,7 @@ Every feature PR builds on these. Each is introduced by the first PR that needs 
 
 - **Observability:** OpenTelemetry traces and structured logs with a correlation ID. A redaction allow-list runs before anything leaves the process (NFR-OPS-1, NFR-OPS-2, NFR-PRV-6).
 - **Outbox:** each module that publishes events writes them to its own outbox table in the same transaction. `FitCore.Worker` dispatches them.
-- **Audit:** `audit.events` is written by triggers. App roles get INSERT and SELECT only, so no one can edit or delete an entry (NFR-AUD-3). R1 audits guardrail overrides; grants and admin actions join in later phases.
+- **Audit:** `audit.events` is written by triggers, through `audit.append()`, a security definer function no app role can call. App roles get SELECT only, and a trigger rejects updates, deletes and truncation from any role, so no one can edit or delete an entry (NFR-AUD-3). R1 audits grant changes, professional writes to targets, guardrail overrides and target acceptances; admin actions join in later phases.
 - **Configuration and secrets:** settings come from `appsettings`, then user secrets locally, then the deployed secret store. No secret is ever committed (NFR-SEC-5).
 
 ### 3.6 Clients
@@ -86,7 +87,7 @@ Every feature PR builds on these. Each is introduced by the first PR that needs 
 - A .NET Aspire AppHost starts the Supabase CLI stack, Valkey, the web host and the worker ([§B.6](architecture-options.md#b6-deployment-model)).
 - Test projects:
   - `FitCore.Domain.Tests`: table tests for every BRD §6 rule, with a 90% line-coverage gate in CI (NFR-MNT-1).
-  - `FitCore.Modules.<Name>.Tests`: each module against the local Supabase stack, through the real unit of work.
+  - `FitCore.Modules.<Name>.Tests`: each module against the local Supabase stack, through the real unit of work. They share the database fixture in `FitCore.Testing` with `FitCore.Platform.Tests`.
   - `FitCore.Architecture.Tests`: extended as projects are added.
   - `FitCore.Load.Tests`: a beta-sized run in [PR 9](#pr-9-beta-environments-and-release) for the API latency targets (NFR-PRF-1, NFR-PRF-2), then the 3× peak run before the public launch (NFR-SCL-1).
 - CI gains jobs as their first content lands: pgTAP, dependency and secret scanning plus SAST (NFR-SEC-9), a MAUI build, and Lighthouse with the Playwright tap tests and a payload budget. Every job gates merging to `main` (NFR-MNT-3).
@@ -97,12 +98,12 @@ The R1 tables port the prototype's schema ([`r1_schema.sql` at `7149e58`](https:
 
 | Schema | Tables | Notes |
 |---|---|---|
-| `identity` | `profiles` | Birth date for the 18+ gate, sex, height, activity level, time zone, units, currency |
+| `identity` | `profiles` | Birth date for the 18+ gate, sex, height, activity level, time zone, units, currency. Private to the member in R1: RLS can't limit a grantee to the name and goals the [permission matrix](BRD.md#32-permission-matrix) allows, so that read arrives as a column-limited path with the Coach/Pro roster |
 | `targets` | `targets` | kcal and macros, `source` (estimated or manual), `set_by`, `state`, `below_soft_limit`, `below_hard_floor`, `effective_from` |
 | `catalog` | `foods`, `food_servings` | Nutrients only, never prices. `owner_id` is null for shared rows, which only the service writes ([BRD §6.1](BRD.md#61-data-contracts)). Unique `(source, source_id)` for imports |
 | `nutrition` | `food_prices`, `diary_entries`, `diary_days` | Prices are private per member. Entries keep nutrient and cost snapshots, a client UUID and a `version`. Days carry the "complete" flag |
 | `progress` | `body_weights` | One row per weigh-in, on the member's local date |
-| `care` | `relationships`, `has_grant()` | Created now, so every RLS policy is grant-aware from the start ([§7.4](architecture-options.md#74-next-steps)). No grant UI until Coach/Pro |
+| `care` | `relationships`, `has_grant()` | Created now, so every RLS policy is grant-aware from the start ([§7.4](architecture-options.md#74-next-steps)). No grant UI until Coach/Pro. In R1 the `nutrition` scope covers the diary, diary days and targets, and `body_metrics` covers weigh-ins |
 | `audit` | `events` | Trigger-written, append-only |
 
 The data contracts from [BRD §6.1](BRD.md#61-data-contracts) apply throughout:
@@ -136,7 +137,7 @@ Nine PRs, each scoped to one item and merged green. A feature PR may land its we
 
 ### PR 3: R1 schema and RLS
 
-- **Scope:** the tables in [section 4](#4-r1-data-model), their policies and audit triggers.
+- **Scope:** the tables in [section 4](#4-r1-data-model), their policies and audit triggers, the `fitcore_catalog_import` role, and the first module test project, `FitCore.Modules.Nutrition.Tests`, with the database fixture moved to `FitCore.Testing` so every database test project shares it.
 - **Accept:**
   - Six-actor pgTAP tests for every private table. Grantee actors run against `care.relationships` rows inserted by the test.
   - A cross-member read or write succeeds only through an active grant whose scope covers the data, and only as the [permission matrix](BRD.md#32-permission-matrix) allows. Other members, out-of-scope grantees and revoked grantees are denied.

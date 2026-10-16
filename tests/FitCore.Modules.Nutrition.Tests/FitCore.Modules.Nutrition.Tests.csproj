@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The nutrition schema against the local Supabase database, through the real unit of work (implementation plan §3.7). -->
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\FitCore.Modules.Nutrition\FitCore.Modules.Nutrition.csproj" />
+    <ProjectReference Include="..\FitCore.Testing\FitCore.Testing.csproj" />
+  </ItemGroup>
+
+</Project>

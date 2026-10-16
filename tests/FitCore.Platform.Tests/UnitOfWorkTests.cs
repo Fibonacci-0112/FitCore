@@ -4,10 +4,10 @@ using Npgsql;
 namespace FitCore.Platform.Tests;
 
 /// <summary>Per-request identity through the unit of work (implementation plan PR 2, RLS spike §4).</summary>
-[Collection(LocalDatabaseGroup.Name)]
-public sealed class UnitOfWorkTests(LocalDatabase db)
+[Collection(PlatformDatabaseGroup.Name)]
+public sealed class UnitOfWorkTests(PlatformDatabase db)
 {
-    private const string Notes = LocalDatabase.Schema + ".notes";
+    private const string Notes = PlatformDatabase.Schema + ".notes";
 
     private static CancellationToken Cancel => TestContext.Current.CancellationToken;
 
@@ -41,7 +41,7 @@ public sealed class UnitOfWorkTests(LocalDatabase db)
         var caller = new DbIdentity(Guid.NewGuid(), "aal2");
         await using var dataSource = db.ApiDataSource();
 
-        await using var work = await LocalDatabase.Database(dataSource).BeginAsync(caller, Cancel);
+        await using var work = await PlatformDatabase.Database(dataSource).BeginAsync(caller, Cancel);
         var (role, uid, aal) = await SessionAsync(work);
 
         Assert.Equal("authenticated", role);
@@ -55,7 +55,7 @@ public sealed class UnitOfWorkTests(LocalDatabase db)
         var caller = new DbIdentity(Guid.NewGuid());
         await using var dataSource = db.ApiDataSource();
 
-        await using var work = await LocalDatabase.Database(dataSource).BeginAsync(caller, Cancel);
+        await using var work = await PlatformDatabase.Database(dataSource).BeginAsync(caller, Cancel);
         await InsertNoteAsync(work, "first");
         await InsertNoteAsync(work, "second");
 
@@ -69,7 +69,7 @@ public sealed class UnitOfWorkTests(LocalDatabase db)
         var owner = new DbIdentity(Guid.NewGuid());
         var other = new DbIdentity(Guid.NewGuid());
         await using var dataSource = db.ApiDataSource();
-        var database = LocalDatabase.Database(dataSource);
+        var database = PlatformDatabase.Database(dataSource);
 
         await using (var work = await database.BeginAsync(owner, Cancel))
         {
@@ -94,7 +94,7 @@ public sealed class UnitOfWorkTests(LocalDatabase db)
         var caller = new DbIdentity(Guid.NewGuid());
         await using var dataSource = db.ApiDataSource();
 
-        await using var work = await LocalDatabase.Database(dataSource).BeginAsync(caller, Cancel);
+        await using var work = await PlatformDatabase.Database(dataSource).BeginAsync(caller, Cancel);
         await using var batch = work.CreateBatch();
         batch.BatchCommands.Add(new NpgsqlBatchCommand($"insert into {Notes} (owner_id, body) values ($1, 'theirs')")
         {
@@ -112,7 +112,7 @@ public sealed class UnitOfWorkTests(LocalDatabase db)
         var caller = new DbIdentity(Guid.NewGuid());
         await using var dataSource = db.ApiDataSource();
 
-        await using var work = await LocalDatabase.Database(dataSource).BeginAsync(caller, Cancel);
+        await using var work = await PlatformDatabase.Database(dataSource).BeginAsync(caller, Cancel);
         await using var batch = work.CreateBatch();
         batch.BatchCommands.Add(new NpgsqlBatchCommand($"select count(*) from {Notes}"));
         batch.BatchCommands.Add(new NpgsqlBatchCommand($"insert into {Notes} (body) values ('one')"));
@@ -125,7 +125,7 @@ public sealed class UnitOfWorkTests(LocalDatabase db)
     {
         var caller = new DbIdentity(Guid.NewGuid());
         await using var dataSource = db.ApiDataSource();
-        var database = LocalDatabase.Database(dataSource);
+        var database = PlatformDatabase.Database(dataSource);
 
         await using (var work = await database.BeginAsync(caller, Cancel))
         {
@@ -143,7 +143,7 @@ public sealed class UnitOfWorkTests(LocalDatabase db)
     {
         var caller = new DbIdentity(Guid.NewGuid());
         await using var dataSource = db.ApiDataSource();
-        var database = LocalDatabase.Database(dataSource);
+        var database = PlatformDatabase.Database(dataSource);
 
         await using var first = await database.BeginAsync(caller, Cancel);
         await using var second = await database.BeginAsync(caller, Cancel);
@@ -162,7 +162,7 @@ public sealed class UnitOfWorkTests(LocalDatabase db)
         var caller = new DbIdentity(Guid.NewGuid());
         await using var dataSource = db.ApiDataSource();
 
-        var (role, uid) = await LocalDatabase.Database(dataSource).ReadAsync(
+        var (role, uid) = await PlatformDatabase.Database(dataSource).ReadAsync(
             caller,
             batch => batch.BatchCommands.Add(new NpgsqlBatchCommand("select current_user::text, auth.uid()")),
             async (reader, ct) =>
@@ -186,7 +186,7 @@ public sealed class UnitOfWorkTests(LocalDatabase db)
         // One pooled connection, and no DISCARD ALL when it returns to the pool, so the probe sees exactly the session
         // state the unit left behind. Session-level SET would show up here (RLS spike §3.2).
         await using var dataSource = db.ApiDataSource(maxPoolSize: 1, noResetOnClose: true);
-        var database = LocalDatabase.Database(dataSource);
+        var database = PlatformDatabase.Database(dataSource);
         var caller = new DbIdentity(Guid.NewGuid());
 
         await EndUnitAsync(database, caller, ending);
@@ -204,7 +204,7 @@ public sealed class UnitOfWorkTests(LocalDatabase db)
     {
         // Fewer connections than callers, and no reset between them, so connections are shared as much as possible.
         await using var dataSource = db.ApiDataSource(maxPoolSize: 4, noResetOnClose: true);
-        var database = LocalDatabase.Database(dataSource);
+        var database = PlatformDatabase.Database(dataSource);
 
         var seen = await Task.WhenAll(Enumerable.Range(0, 400).Select(async i =>
         {
