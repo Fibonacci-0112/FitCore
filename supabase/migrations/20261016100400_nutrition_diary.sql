@@ -28,7 +28,9 @@ create table nutrition.food_prices (
   -- Breaks ties between prices with the same effective date: the newest wins (implementation plan §4).
   created_at timestamptz not null default now(),
   check ((package_unit = 'serving') = (package_serving_id is not null)),
-  foreign key (package_serving_id, food_id) references catalog.food_servings (id, food_id) on delete cascade
+  foreign key (package_serving_id, food_id) references catalog.food_servings (id, food_id) on delete cascade,
+  -- Lets diary entries require that a price is for the food they name.
+  unique (id, food_id)
 );
 
 create index food_prices_lookup on nutrition.food_prices (member_id, food_id, currency, effective_date desc, created_at desc);
@@ -79,7 +81,9 @@ create table nutrition.diary_entries (
   -- The serving belongs to the entry's food. The second key clears serving_id when the food goes first, which
   -- leaves food_id null and takes the first key out of play.
   foreign key (serving_id, food_id) references catalog.food_servings (id, food_id) on delete set null (serving_id),
-  foreign key (serving_id) references catalog.food_servings (id) on delete set null
+  foreign key (serving_id) references catalog.food_servings (id) on delete set null,
+  -- The price is for the entry's food, so an entry's cost never comes from another food's price.
+  foreign key (price_id, food_id) references nutrition.food_prices (id, food_id) on delete set null (price_id)
 );
 
 create index diary_entries_day on nutrition.diary_entries (member_id, diary_date);
@@ -115,8 +119,9 @@ create policy diary_entries_select on nutrition.diary_entries for select to auth
 create policy diary_entries_insert_own on nutrition.diary_entries for insert to authenticated
   with check (
     member_id = (select auth.uid())
-    -- Checked here rather than as a table constraint, so deleting a serving later only clears the reference.
+    -- Checked here rather than as table constraints, so deleting a serving or food later only clears the reference.
     and (unit <> 'serving' or serving_id is not null)
+    and (price_id is null or food_id is not null)
     and (food_id is null or exists (select 1 from catalog.foods f where f.id = food_id))
     and (price_id is null or exists (
       select 1 from nutrition.food_prices p where p.id = price_id and p.member_id = (select auth.uid()))));

@@ -3,7 +3,7 @@
 begin;
 \ir helpers/actors.psql
 
-select plan(56);
+select plan(58);
 
 select tests.grant_scope('nutrition');
 select tests.act_as_postgres();
@@ -87,6 +87,15 @@ select throws_ok(
     values (gen_random_uuid(), '2026-10-15', 'dinner', 'c0000000-0000-4000-8000-000000000001',
             'd0000000-0000-4000-8000-000000000021', 100, 'g', 'Oats', 'priced', 70, 'USD')$$,
   '42501', null, 'The owner can''t cost an entry with another member''s price');
+select throws_ok(
+  $$insert into nutrition.diary_entries (id, diary_date, meal, food_id, price_id, amount, unit, food_name, cost_status, cost_minor, currency)
+    values (gen_random_uuid(), '2026-10-15', 'dinner', 'c0000000-0000-4000-8000-000000000011',
+            'd0000000-0000-4000-8000-000000000001', 100, 'g', 'Bar', 'priced', 50, 'USD')$$,
+  '23503', null, 'An entry''s price is for its food');
+select throws_ok(
+  $$insert into nutrition.diary_entries (id, diary_date, meal, price_id, amount, unit, food_name, cost_status, cost_minor, currency)
+    values (gen_random_uuid(), '2026-10-15', 'dinner', 'd0000000-0000-4000-8000-000000000001', 100, 'g', 'Oats', 'priced', 50, 'USD')$$,
+  '42501', null, 'A priced entry names its food');
 select throws_ok(
   $$insert into nutrition.diary_entries (id, diary_date, meal, food_id, serving_id, amount, unit, food_name, serving_count, cost_status)
     values (gen_random_uuid(), '2026-10-15', 'dinner', 'c0000000-0000-4000-8000-000000000011',
