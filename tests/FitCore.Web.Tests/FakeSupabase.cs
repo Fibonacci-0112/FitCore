@@ -17,11 +17,11 @@ public sealed class FakeSupabase : HttpMessageHandler
     public const string SecretKey = "sb_secret_test";
     public const string Password = "correct horse battery staple";
 
-    private readonly ECDsa _key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-    private readonly ECDsaSecurityKey _securityKey;
+    private readonly List<ECDsa> _keys = [];
+    private ECDsaSecurityKey _securityKey = null!;
     private int _refreshTokens;
 
-    public FakeSupabase() => _securityKey = new ECDsaSecurityKey(_key) { KeyId = "test-key" };
+    public FakeSupabase() => RotateKey();
 
     public enum RefreshAnswer
     {
@@ -32,6 +32,13 @@ public sealed class FakeSupabase : HttpMessageHandler
         Unreachable,
     }
 
+    public enum LogoutAnswer
+    {
+        SignedOut,
+        ServerError,
+        KeyRejected,
+    }
+
     /// <summary>The member every session belongs to.</summary>
     public Guid Member { get; } = Guid.NewGuid();
 
@@ -40,8 +47,10 @@ public sealed class FakeSupabase : HttpMessageHandler
 
     public RefreshAnswer Refresh { get; set; } = RefreshAnswer.NewSession;
 
-    /// <summary>Whether logout succeeds; false answers it with a server error.</summary>
-    public bool LogoutWorks { get; set; } = true;
+    public LogoutAnswer Logout { get; set; } = LogoutAnswer.SignedOut;
+
+    /// <summary>Characters of user metadata in the access tokens it issues, to make sessions bigger than one cookie.</summary>
+    public int MetadataLength { get; set; }
 
     /// <summary>Whether the JWKS endpoint answers; false makes it unreachable.</summary>
     public bool JwksReachable { get; set; } = true;
@@ -52,25 +61,39 @@ public sealed class FakeSupabase : HttpMessageHandler
     public List<string> IssuedTokens { get; } = [];
 
     /// <summary>A valid access token for <see cref="Member"/>, for bearer callers.</summary>
-    public string IssueToken(int expiresIn = 900)
+    public string IssueToken(int expiresIn = 900, int? notBeforeIn = null)
     {
         var expires = DateTime.UtcNow.AddSeconds(expiresIn);
+        var claims = new Dictionary<string, object>
+        {
+            ["sub"] = Member.ToString(),
+            ["role"] = "authenticated",
+            ["aal"] = "aal1",
+            ["session_id"] = Guid.NewGuid().ToString(),
+        };
+        if (MetadataLength > 0)
+        {
+            claims["user_metadata"] = new Dictionary<string, object> { ["display_name"] = new string('x', MetadataLength) };
+        }
+
         return new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
         {
             Issuer = new Uri(Url, "auth/v1").ToString(),
             Audience = "authenticated",
             IssuedAt = expires.AddHours(-1),
-            NotBefore = expires.AddHours(-1),
+            NotBefore = notBeforeIn is { } nbf ? DateTime.UtcNow.AddSeconds(nbf) : expires.AddHours(-1),
             Expires = expires,
-            Claims = new Dictionary<string, object>
-            {
-                ["sub"] = Member.ToString(),
-                ["role"] = "authenticated",
-                ["aal"] = "aal1",
-                ["session_id"] = Guid.NewGuid().ToString(),
-            },
+            Claims = claims,
             SigningCredentials = new SigningCredentials(_securityKey, SecurityAlgorithms.EcdsaSha256),
         });
+    }
+
+    /// <summary>Signs from now on with a new key, which the JWKS then publishes alone.</summary>
+    public void RotateKey()
+    {
+        var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        _keys.Add(key);
+        _securityKey = new ECDsaSecurityKey(key) { KeyId = $"test-key-{_keys.Count}" };
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -97,7 +120,12 @@ public sealed class FakeSupabase : HttpMessageHandler
                 RefreshAnswer.ServerError => Json(HttpStatusCode.BadGateway, new JsonObject()),
                 _ => throw new HttpRequestException("Supabase Auth is unreachable."),
             },
-            "/auth/v1/logout?scope=local" => new HttpResponseMessage(LogoutWorks ? HttpStatusCode.NoContent : HttpStatusCode.BadGateway),
+            "/auth/v1/logout?scope=local" => Logout switch
+            {
+                LogoutAnswer.SignedOut => new HttpResponseMessage(HttpStatusCode.NoContent),
+                LogoutAnswer.KeyRejected => Json(HttpStatusCode.Unauthorized, new JsonObject { ["message"] = "Invalid API key" }),
+                _ => new HttpResponseMessage(HttpStatusCode.BadGateway),
+            },
             _ => new HttpResponseMessage(HttpStatusCode.NotFound),
         };
     }
@@ -119,7 +147,7 @@ public sealed class FakeSupabase : HttpMessageHandler
 
     private JsonObject Jwks()
     {
-        var parameters = _key.ExportParameters(includePrivateParameters: false);
+        var parameters = _securityKey.ECDsa.ExportParameters(includePrivateParameters: false);
         return new JsonObject
         {
             ["keys"] = new JsonArray(new JsonObject

@@ -40,7 +40,7 @@ public enum AuthStatus
     /// <summary>The confirmation link is expired, used or wrong.</summary>
     InvalidLink,
 
-    /// <summary>Supabase refused the refresh token: the session is over.</summary>
+    /// <summary>The session is over: Supabase refused its refresh token, or signed it out.</summary>
     SessionEnded,
 
     /// <summary>Supabase refused the request for a reason none of the others name, such as an email address it won't accept.</summary>

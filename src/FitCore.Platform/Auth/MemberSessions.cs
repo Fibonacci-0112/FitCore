@@ -27,10 +27,10 @@ public sealed class MemberSessions
 
     /// <summary>
     /// Signs the member out (ADR 0005 decision 7): Supabase revokes the session's refresh tokens, the cookie goes, and
-    /// <c>Clear-Site-Data</c> tells the browser to drop everything the web client cached. If Supabase can't be reached
+    /// <c>Clear-Site-Data</c> tells the browser to drop everything the web client cached. If Supabase can't confirm it
     /// the member stays signed in, rather than leaving a refresh token alive behind a deleted cookie (NFR-SEC-4).
     /// </summary>
-    /// <returns>False if Supabase couldn't revoke the session; the cookie is kept so the member can try again.</returns>
+    /// <returns>False if Supabase didn't confirm it revoked the session; the cookie is kept so the member can try again.</returns>
     public async Task<bool> EndAsync(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -44,8 +44,9 @@ public sealed class MemberSessions
                 return false;
             }
 
+            // Only a confirmed sign-out deletes the cookie: a rejected API key, for one, revokes nothing.
             var outcome = await _auth.SignOutAsync(session.AccessToken, context.Connection.RemoteIpAddress, context.RequestAborted);
-            if (outcome.Status is AuthStatus.Unavailable or AuthStatus.RateLimited)
+            if (outcome.Status != AuthStatus.SessionEnded)
             {
                 return false;
             }

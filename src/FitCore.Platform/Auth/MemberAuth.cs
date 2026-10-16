@@ -58,9 +58,15 @@ public sealed class MemberAuth
     public Task<AuthOutcome> VerifyEmailAsync(string tokenHash, IPAddress? memberIp, CancellationToken cancellationToken = default) =>
         SendAsync("verify", new JsonObject { ["token_hash"] = tokenHash, ["type"] = "email" }, memberIp, null, cancellationToken);
 
-    /// <summary>Ends the session the access token belongs to and revokes its refresh tokens (NFR-SEC-4).</summary>
-    public Task<AuthOutcome> SignOutAsync(string accessToken, IPAddress? memberIp, CancellationToken cancellationToken = default) =>
-        SendAsync("logout?scope=local", null, memberIp, accessToken, cancellationToken);
+    /// <summary>
+    /// Ends the session the access token belongs to and revokes its refresh tokens (NFR-SEC-4). Only
+    /// <see cref="AuthStatus.SessionEnded"/> means the session is gone; anything else may have left it alive.
+    /// </summary>
+    public async Task<AuthOutcome> SignOutAsync(string accessToken, IPAddress? memberIp, CancellationToken cancellationToken = default)
+    {
+        var outcome = await SendAsync("logout?scope=local", null, memberIp, accessToken, cancellationToken);
+        return outcome.Status == AuthStatus.ConfirmationSent ? new(AuthStatus.SessionEnded) : outcome;
+    }
 
     private async Task<AuthOutcome> SendAsync(string path, JsonObject? body, IPAddress? memberIp, string? accessToken, CancellationToken cancellationToken)
     {
@@ -138,6 +144,12 @@ public sealed class MemberAuth
                 or "session_expired" or "user_not_found" or "user_banned"
                 ? new(AuthStatus.SessionEnded)
                 : new(AuthStatus.Unavailable);
+        }
+
+        if (path.StartsWith("logout", StringComparison.Ordinal) && errorCode is "session_not_found" or "user_not_found")
+        {
+            // Already gone, so there is nothing left to revoke.
+            return new(AuthStatus.SessionEnded);
         }
 
         return errorCode switch

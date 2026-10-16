@@ -17,6 +17,9 @@ public sealed partial class FitCoreApp : WebApplicationFactory<Program>
 
     public FakeSupabase Supabase { get; } = new();
 
+    /// <summary>The app's clock: real time, which a test can move forward.</summary>
+    public TestClock Clock { get; } = new();
+
     /// <summary>A browser: HTTPS, so the <c>__Host-</c> cookie is kept, with cookies and without following redirects.</summary>
     public HttpClient Browser() => CreateClient(new()
     {
@@ -52,6 +55,7 @@ public sealed partial class FitCoreApp : WebApplicationFactory<Program>
         {
             services.AddHttpClient(MemberAuth.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => Supabase);
             services.AddTransient<IStartupFilter, MemberIpFilter>();
+            services.AddSingleton<TimeProvider>(Clock);
         });
     }
 
@@ -70,4 +74,12 @@ public sealed partial class FitCoreApp : WebApplicationFactory<Program>
 
     [GeneratedRegex("name=\"__RequestVerificationToken\" value=\"([^\"]+)\"", RegexOptions.None, "en-US")]
     private static partial Regex RequestToken();
+}
+
+/// <summary>Real time plus an offset a test sets.</summary>
+public sealed class TestClock : TimeProvider
+{
+    public TimeSpan Offset { get; set; }
+
+    public override DateTimeOffset GetUtcNow() => base.GetUtcNow() + Offset;
 }

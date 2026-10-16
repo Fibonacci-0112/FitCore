@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 
@@ -8,6 +9,7 @@ namespace FitCore.Platform.Auth;
 /// <summary>
 /// The web session cookie (ADR 0005 decision 1): the Supabase session, encrypted and signed with Data Protection, in
 /// an HttpOnly, Secure, SameSite=Lax cookie whose <c>__Host-</c> prefix pins it to this origin and path <c>/</c>.
+/// A session too big for one cookie is split into chunks (<c>__Host-fitcore-sessionC1</c>, …), which keep the prefix.
 /// </summary>
 internal sealed class SessionCookie
 {
@@ -15,6 +17,8 @@ internal sealed class SessionCookie
 
     /// <summary>The cookie outlives no session: the session time-box is 30 days (supabase/README.md, Auth settings).</summary>
     private static readonly TimeSpan Lifetime = TimeSpan.FromDays(30);
+
+    private static readonly ChunkingCookieManager Chunks = new();
 
     private readonly IDataProtector _protector;
     private readonly TimeProvider _time;
@@ -28,7 +32,8 @@ internal sealed class SessionCookie
     /// <summary>The session in the request's cookie, or null if there is none or it doesn't decrypt.</summary>
     public AuthSession? Read(HttpContext context)
     {
-        if (!context.Request.Cookies.TryGetValue(Name, out var value) || string.IsNullOrEmpty(value))
+        var value = Chunks.GetRequestCookie(context, Name);
+        if (string.IsNullOrEmpty(value))
         {
             return null;
         }
@@ -49,13 +54,13 @@ internal sealed class SessionCookie
     public void Write(HttpContext context, AuthSession session)
     {
         var value = _protector.Protect(JsonSerializer.Serialize(new Stored(session.AccessToken, session.RefreshToken, session.ExpiresAt.ToUnixTimeSeconds())));
-        context.Response.Cookies.Append(Name, value, Options(_time.GetUtcNow().Add(Lifetime)));
+        Chunks.AppendResponseCookie(context, Name, value, Options(_time.GetUtcNow().Add(Lifetime)));
         context.Items[typeof(SessionCookie)] = session;
     }
 
     public static void Delete(HttpContext context)
     {
-        context.Response.Cookies.Delete(Name, Options(null));
+        Chunks.DeleteCookie(context, Name, Options(null));
         context.Items[typeof(SessionCookie)] = null;
     }
 

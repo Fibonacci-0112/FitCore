@@ -48,6 +48,7 @@ app.UseNoStoreHtml();
 // Routing runs after the error handling, so a re-executed /Error or /not-found request is routed again.
 app.UseRouting();
 app.UseAuthentication();
+app.UseAuthOutageResponse();
 app.UseWhen(IsApi, api => api.UseCrossSiteWriteProtection());
 app.UseAuthorization();
 app.UseAntiforgery();

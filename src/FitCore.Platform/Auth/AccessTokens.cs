@@ -26,6 +26,7 @@ internal sealed class AccessTokens : IDisposable
     private IList<SecurityKey> _keys = [];
     private DateTimeOffset _fetchedAt = DateTimeOffset.MinValue;
     private DateTimeOffset _retryAfter = DateTimeOffset.MinValue;
+    private bool _fetchFailed;
 
     public AccessTokens(IHttpClientFactory httpClients, IOptions<SupabaseOptions> options, TimeProvider time)
     {
@@ -46,6 +47,7 @@ internal sealed class AccessTokens : IDisposable
         }
         catch (ArgumentException)
         {
+            // Includes SecurityTokenMalformedException.
             return null;
         }
 
@@ -59,8 +61,7 @@ internal sealed class AccessTokens : IDisposable
             ValidAlgorithms = [SecurityAlgorithms.EcdsaSha256, SecurityAlgorithms.RsaSha256],
             RequireExpirationTime = true,
             ClockSkew = TimeSpan.FromSeconds(30),
-            LifetimeValidator = (notBefore, expires, _, parameters) =>
-                expires is { } at && at.ToUniversalTime() > _time.GetUtcNow().UtcDateTime - parameters.ClockSkew,
+            LifetimeValidator = (notBefore, expires, _, parameters) => IsCurrent(notBefore, expires, parameters.ClockSkew),
             NameClaimType = "sub",
             RoleClaimType = Claims.Role,
             AuthenticationType = authenticationType,
@@ -82,7 +83,7 @@ internal sealed class AccessTokens : IDisposable
     {
         if (!NeedsFetch(keyId))
         {
-            return KnownKeys();
+            return KnownKeys(keyId);
         }
 
         await _fetch.WaitAsync(cancellationToken);
@@ -94,6 +95,7 @@ internal sealed class AccessTokens : IDisposable
                 var json = await _httpClients.CreateClient(MemberAuth.HttpClientName).GetStringAsync(url, cancellationToken);
                 _keys = new JsonWebKeySet(json).GetSigningKeys();
                 _fetchedAt = _time.GetUtcNow();
+                _fetchFailed = false;
             }
         }
         catch (Exception e) when (e is HttpRequestException || (e is TaskCanceledException && !cancellationToken.IsCancellationRequested))
@@ -101,18 +103,39 @@ internal sealed class AccessTokens : IDisposable
             // Supabase is down or timed out. Requests keep the keys already known, and none of them waits on another
             // fetch until the back-off ends, so an outage doesn't queue every request behind the HttpClient timeout.
             _retryAfter = _time.GetUtcNow() + MinimumRefetch;
+            _fetchFailed = true;
         }
         finally
         {
             _fetch.Release();
         }
 
-        return KnownKeys();
+        return KnownKeys(keyId);
     }
 
-    /// <summary>The keys to validate with, or an error if Supabase hasn't published any that this instance could fetch.</summary>
-    private IList<SecurityKey> KnownKeys() =>
-        _keys.Count > 0 ? _keys : throw new HttpRequestException("Supabase Auth's signing keys are unavailable.");
+    /// <summary>
+    /// The keys to validate with, or an error if this instance couldn't fetch the ones it needs: none at all, or not
+    /// the token's key because the last fetch failed. A token signed with a key rotated in during an outage is then
+    /// unverifiable rather than invalid, so a valid session isn't ended (ADR 0005 decision 4).
+    /// </summary>
+    private IList<SecurityKey> KnownKeys(string? keyId) =>
+        _keys.Count == 0 || (_fetchFailed && keyId is not null && _keys.All(k => k.KeyId != keyId))
+            ? throw new HttpRequestException("Supabase Auth's signing keys are unavailable.")
+            : _keys;
+
+    /// <summary>Not before its <c>nbf</c>, not after its <c>exp</c>, both within the clock skew; and the range itself the right way round.</summary>
+    private bool IsCurrent(DateTime? notBefore, DateTime? expires, TimeSpan skew)
+    {
+        if (expires is not { } until)
+        {
+            return false;
+        }
+
+        var now = _time.GetUtcNow().UtcDateTime;
+        until = until.ToUniversalTime();
+        return until > now - skew
+            && (notBefore is not { } from || (from.ToUniversalTime() <= now + skew && from.ToUniversalTime() < until));
+    }
 
     private bool NeedsFetch(string? keyId)
     {

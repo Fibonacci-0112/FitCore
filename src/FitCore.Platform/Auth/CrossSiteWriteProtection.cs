@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace FitCore.Platform.Auth;
 
@@ -48,6 +49,13 @@ public static class CrossSiteWriteProtection
 
     private static async Task<bool> HasAntiforgeryTokenAsync(HttpContext context)
     {
+        // Only the header counts: IAntiforgery would also take the token from a form field (ADR 0005 decision 5).
+        var header = context.RequestServices.GetRequiredService<IOptions<AntiforgeryOptions>>().Value.HeaderName;
+        if (header is null || !context.Request.Headers.ContainsKey(header))
+        {
+            return false;
+        }
+
         try
         {
             await context.RequestServices.GetRequiredService<IAntiforgery>().ValidateRequestAsync(context);

@@ -20,7 +20,8 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
         this.app = app;
         app.Supabase.ExpiresIn = 900;
         app.Supabase.Refresh = FakeSupabase.RefreshAnswer.NewSession;
-        app.Supabase.LogoutWorks = true;
+        app.Supabase.Logout = FakeSupabase.LogoutAnswer.SignedOut;
+        app.Supabase.MetadataLength = 0;
         app.Supabase.Requests.Clear();
         browser = app.Browser();
     }
@@ -155,6 +156,37 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
     }
 
     [Fact]
+    public async Task An_outage_with_an_expired_token_shows_the_error_page_on_any_page()
+    {
+        app.Supabase.ExpiresIn = -60;
+        (await FitCoreApp.SignInAsync(browser)).Dispose();
+        app.Supabase.Refresh = FakeSupabase.RefreshAnswer.ServerError;
+
+        using var response = await browser.GetAsync("/", Cancel);
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.NotNull(response.Headers.RetryAfter);
+        Assert.Contains("Sign-in is unavailable", await response.Content.ReadAsStringAsync(Cancel), StringComparison.Ordinal);
+        Assert.False(response.Headers.TryGetValues("Set-Cookie", out var cookies) && cookies.Any(c => c.StartsWith("__Host-fitcore-session=", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task A_session_bigger_than_one_cookie_is_split_and_deleted_whole()
+    {
+        app.Supabase.MetadataLength = 6000;
+        using var signIn = await FitCoreApp.SignInAsync(browser);
+        Assert.Contains(signIn.Headers.GetValues("Set-Cookie"), c => c.StartsWith("__Host-fitcore-sessionC2=", StringComparison.Ordinal));
+
+        var home = await browser.GetStringAsync("/", Cancel);
+        Assert.Contains(SignedIn, home, StringComparison.Ordinal);
+
+        using var form = new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = FitCoreApp.AntiforgeryToken(home) });
+        using var signOut = await browser.PostAsync("/account/sign-out", form, Cancel);
+        Assert.Contains(signOut.Headers.GetValues("Set-Cookie"), c => c.StartsWith("__Host-fitcore-sessionC2=;", StringComparison.Ordinal));
+        Assert.DoesNotContain(SignedIn, await browser.GetStringAsync("/", Cancel), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task An_outage_while_the_token_still_works_keeps_the_member_signed_in()
     {
         app.Supabase.ExpiresIn = 60;
@@ -182,6 +214,22 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
     }
 
     [Fact]
+    public async Task A_cookie_write_to_the_API_needs_the_token_in_the_header_not_a_form_field()
+    {
+        (await FitCoreApp.SignInAsync(browser)).Dispose();
+        var token = FitCoreApp.AntiforgeryToken(await browser.GetStringAsync("/", Cancel));
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/v1/profile")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = token }),
+        };
+        request.Headers.Add("Origin", "https://localhost");
+
+        using var response = await browser.SendAsync(request, Cancel);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
     public async Task A_bearer_write_skips_the_cross_site_checks()
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "/v1/profile");
@@ -201,6 +249,48 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData("not-a-jwt")]
+    [InlineData("a.b.c")]
+    public async Task A_malformed_bearer_token_gets_401(string token)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/v1/profile");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var response = await app.Browser().SendAsync(request, Cancel);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_bearer_token_before_its_not_before_time_gets_401()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/v1/profile");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", app.Supabase.IssueToken(notBeforeIn: 300));
+        using var response = await app.Browser().SendAsync(request, Cancel);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_token_signed_with_a_key_rotated_in_during_an_outage_answers_503()
+    {
+        await using var fresh = new FitCoreApp();
+        var client = fresh.Browser();
+        Assert.Equal((HttpStatusCode.OK, true), await BearerHomeAsync(client, fresh.Supabase.IssueToken()));
+
+        fresh.Clock.Offset = TimeSpan.FromMinutes(1);
+        fresh.Supabase.RotateKey();
+        fresh.Supabase.JwksReachable = false;
+
+        // Unverifiable, not invalid: during the outage and its back-off alike.
+        Assert.Equal((HttpStatusCode.ServiceUnavailable, false), await BearerHomeAsync(client, fresh.Supabase.IssueToken()));
+        Assert.Equal((HttpStatusCode.ServiceUnavailable, false), await BearerHomeAsync(client, fresh.Supabase.IssueToken()));
+
+        fresh.Supabase.JwksReachable = true;
+        fresh.Clock.Offset = TimeSpan.FromMinutes(2);
+        Assert.Equal((HttpStatusCode.OK, true), await BearerHomeAsync(client, fresh.Supabase.IssueToken()));
+    }
+
     [Fact]
     public async Task Signing_out_revokes_the_session_and_clears_the_browser()
     {
@@ -217,11 +307,13 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
         Assert.DoesNotContain(SignedIn, await browser.GetStringAsync("/", Cancel), StringComparison.Ordinal);
     }
 
-    [Fact]
-    public async Task Sign_out_keeps_the_session_when_Supabase_cant_revoke_it()
+    [Theory]
+    [InlineData(FakeSupabase.LogoutAnswer.ServerError)]
+    [InlineData(FakeSupabase.LogoutAnswer.KeyRejected)]
+    public async Task Sign_out_keeps_the_session_when_Supabase_doesnt_confirm_it(FakeSupabase.LogoutAnswer answer)
     {
         (await FitCoreApp.SignInAsync(browser)).Dispose();
-        app.Supabase.LogoutWorks = false;
+        app.Supabase.Logout = answer;
         var home = await browser.GetStringAsync("/", Cancel);
         using var form = new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = FitCoreApp.AntiforgeryToken(home) });
 
@@ -273,6 +365,15 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.DoesNotContain(app.Supabase.Requests, r => r.Path.StartsWith("/auth/v1/logout", StringComparison.Ordinal));
+    }
+
+    /// <summary>The home page as a bearer caller: its status, and whether it shows the caller signed in.</summary>
+    private static async Task<(HttpStatusCode Status, bool SignedIn)> BearerHomeAsync(HttpClient client, string token)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var response = await client.SendAsync(request, Cancel);
+        return (response.StatusCode, (await response.Content.ReadAsStringAsync(Cancel)).Contains(SignedIn, StringComparison.Ordinal));
     }
 
     // NavigationManager redirects to an absolute URL on this site.
