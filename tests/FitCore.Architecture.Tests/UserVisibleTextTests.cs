@@ -71,6 +71,14 @@ public sealed partial class UserVisibleTextTests
     [Theory]
     [InlineData("[Required(ErrorMessage = \"Enter your name.\")]")]
     [InlineData("[StringLength(80, ErrorMessage=\"Too long\")]")]
+    [InlineData("[Required(ErrorMessage = \"\")]")]
+    [InlineData("[Required(ErrorMessage = @\"\")]")]
+    [InlineData("[Required(ErrorMessage = @\"Enter your name.\")]")]
+    [InlineData("[Required(ErrorMessage = \"\"\"Enter your name.\"\"\")]")]
+    [InlineData("[Required(ErrorMessage = $\"Use {Max} characters.\")]")]
+    [InlineData("[Required(ErrorMessage = $@\"Use {Max} characters.\")]")]
+    [InlineData("[Required(ErrorMessage = @$\"Use {Max} characters.\")]")]
+    [InlineData("[Required(ErrorMessage = $$\"\"\"Use {{Max}} characters.\"\"\")]")]
     public void The_scan_catches_literal_validation_messages(string code)
     {
         Assert.Matches(LiteralErrorMessage(), code);
@@ -183,7 +191,8 @@ public sealed partial class UserVisibleTextTests
     [GeneratedRegex(@"\b(aria-label|aria-description|aria-placeholder|placeholder|title|alt)\s*=\s*""([^""]*)""")]
     private static partial Regex VisibleAttribute();
 
-    // ErrorMessage = "...": a validation message written into the code.
-    [GeneratedRegex("""\bErrorMessage\s*=\s*\$?@?"[^"]""")]
+    // ErrorMessage = "...": a validation message written into the code, as any string literal: regular, verbatim (@),
+    // interpolated ($, $@, @$) or raw ("""), even empty.
+    [GeneratedRegex(@"\bErrorMessage\s*=\s*(?:\$+@?|@\$*)?""")]
     private static partial Regex LiteralErrorMessage();
 }
