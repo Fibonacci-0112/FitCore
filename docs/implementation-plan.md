@@ -150,7 +150,7 @@ Nine PRs, each scoped to one item and merged green. A feature PR may land its we
 - **Scope:** Platform authentication, the web session cookie, sign-in rate limits, the Identity module (profile and the 18+ gate), the `FitCore.Maui` project, and both UI shells with all four sign-in methods.
 - **Accept:**
   - Sign up, sign in and sign out on the web and on Android in CI. Signing out clears every cached member record.
-  - A user under 18 can't complete sign-up.
+  - A user under 18 can't complete sign-up. An email sign-up without a birth date is refused, even straight to Supabase Auth's public sign-up endpoint. An account from Google, Microsoft or Apple, which supply no birth date, can't reach member data or the app until onboarding records an adult birth date.
   - The native smoke checklist (sign-in redirect, session survives an app kill, tokens in the platform secure store, offline save error) passes on a physical iPhone and Android device and on Windows and macOS. The on-device Apple test from the auth spike runs here.
   - A cross-site request that changes state through the web session is rejected.
 

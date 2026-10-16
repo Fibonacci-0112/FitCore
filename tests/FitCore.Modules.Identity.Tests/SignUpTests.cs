@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using FitCore.Contracts.Profiles;
 using FitCore.Platform.Auth;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace FitCore.Modules.Identity.Tests;
 
@@ -61,6 +62,26 @@ public sealed class SignUpTests(SupabaseApp stack) : IClassFixture<SupabaseApp>
             email, SupabaseApp.Password, new SignUpProfile("Kid", DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-12), "UTC"), null, Cancel);
 
         Assert.Equal(AuthStatus.Underage, outcome.Status);
+        Assert.Equal(0L, await CountUsersAsync(email));
+    }
+
+    [Fact]
+    public async Task Supabase_Auth_refuses_a_sign_up_without_a_birth_date()
+    {
+        // Straight to Auth's public sign-up endpoint, as any caller can, with no birth date in the metadata.
+        var supabase = stack.Services.GetRequiredService<IOptions<SupabaseOptions>>().Value;
+        var email = SupabaseApp.NewEmail();
+        using var client = new HttpClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(supabase.Url!, "auth/v1/signup"))
+        {
+            Content = JsonContent.Create(new { email, password = SupabaseApp.Password, data = new { display_name = "No date" } }),
+        };
+        request.Headers.Add("apikey", supabase.SecretKey);
+
+        using var response = await client.SendAsync(request, Cancel);
+
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Contains("23514", await response.Content.ReadAsStringAsync(Cancel), StringComparison.Ordinal);
         Assert.Equal(0L, await CountUsersAsync(email));
     }
 
