@@ -4,8 +4,9 @@ namespace FitCore.Architecture.Tests;
 
 /// <summary>
 /// User-visible text comes from resource files, so another language needs no code change (NFR-L10N-2, implementation
-/// plan §3.6). The scan covers what Razor shows, the attributes screen readers and browsers read out, and validation
-/// messages. Text a C# method returns isn't scanned; it goes through the same resource classes by review.
+/// plan §3.6). The scan covers what Razor shows, the XAML attributes that hold text, the attributes screen readers and
+/// browsers read out, and validation messages. Text a C# method returns isn't scanned; it goes through the same resource
+/// classes by review.
 /// </summary>
 public sealed partial class UserVisibleTextTests
 {
@@ -13,7 +14,11 @@ public sealed partial class UserVisibleTextTests
 
     private static readonly string[] CodePaths = [.. Files("src", "*.cs"), .. RazorPaths];
 
+    private static readonly string[] XamlPaths = [.. Files("src", "*.xaml")];
+
     public static TheoryData<string> Razor => [.. RazorPaths];
+
+    public static TheoryData<string> Xaml => [.. XamlPaths];
 
     public static TheoryData<string> Code => [.. CodePaths];
 
@@ -22,6 +27,37 @@ public sealed partial class UserVisibleTextTests
     {
         Assert.Contains(RazorPaths, path => path.EndsWith("Account/SignUp.razor", StringComparison.Ordinal));
         Assert.Contains(RazorPaths, path => path.EndsWith("Layout/MainLayout.razor", StringComparison.Ordinal));
+        Assert.Contains(XamlPaths, path => path.EndsWith("Pages/SignUpPage.xaml", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [MemberData(nameof(Xaml))]
+    public void Xaml_shows_only_resource_text(string path)
+    {
+        Assert.Empty(HardCodedXaml(File.ReadAllText(Path.Combine(Solution.Root, path))));
+    }
+
+    [Theory]
+    [InlineData("<ContentPage Title=\"Create your account\">")]
+    [InlineData("<Label Text=\"Name\" />")]
+    [InlineData("<Entry Placeholder=\"you@example.com\" />")]
+    [InlineData("<Entry SemanticProperties.Description=\"Email\" />")]
+    [InlineData("<Entry SemanticProperties.Hint=\"At least 15 characters\" />")]
+    [InlineData("<Button Text=\"Sign in\" Command=\"{Binding SignInCommand}\" />")]
+    public void The_scan_catches_hard_coded_xaml_text(string xaml)
+    {
+        Assert.NotEmpty(HardCodedXaml(xaml));
+    }
+
+    [Theory]
+    [InlineData("<Label Text=\"{x:Static strings:AccountStrings.NameLabel}\" />")]
+    [InlineData("<Label Text=\"{Binding Error}\" IsVisible=\"{Binding HasError}\" />")]
+    [InlineData("<!-- Text=\"A comment may say anything\" -->\n<Label Text=\"{x:Static strings:ShellStrings.AppName}\" />")]
+    [InlineData("<Shell x:Class=\"FitCore.Maui.AppShell\" Shell.FlyoutBehavior=\"Disabled\"><ShellContent Route=\"sign-up\" /></Shell>")]
+    [InlineData("<Label Text=\"\" />")]
+    public void The_scan_allows_resource_xaml_text(string xaml)
+    {
+        Assert.Empty(HardCodedXaml(xaml));
     }
 
     [Theory]
@@ -126,6 +162,12 @@ public sealed partial class UserVisibleTextTests
         return found;
     }
 
+    /// <summary>XAML attributes that hold text and aren't a markup extension, such as {x:Static} or {Binding}.</summary>
+    private static List<string> HardCodedXaml(string xaml) =>
+        [.. XamlTextAttribute().Matches(Comments().Replace(xaml, ""))
+            .Where(attribute => !attribute.Groups[2].Value.StartsWith('{') && Letter().IsMatch(attribute.Groups[2].Value))
+            .Select(attribute => attribute.Value)];
+
     /// <summary>Removes each <paramref name="start"/> block up to its matching closing brace.</summary>
     private static string WithoutBlocks(string text, string start)
     {
@@ -190,6 +232,10 @@ public sealed partial class UserVisibleTextTests
     // Attributes a browser or screen reader shows or reads out.
     [GeneratedRegex(@"\b(aria-label|aria-description|aria-placeholder|placeholder|title|alt)\s*=\s*""([^""]*)""")]
     private static partial Regex VisibleAttribute();
+
+    // XAML attributes a screen shows or reads out: Text, Title, Placeholder and the semantic and automation descriptions.
+    [GeneratedRegex(@"(?<![\w.:])((?:SemanticProperties\.|AutomationProperties\.|ToolTipProperties\.)?(?:Text|Title|Placeholder|Description|Hint|Name|HelpText))\s*=\s*""([^""]*)""")]
+    private static partial Regex XamlTextAttribute();
 
     // ErrorMessage = "...": a validation message written into the code, as any string literal: regular, verbatim (@),
     // interpolated ($, $@, @$) or raw ("""), even empty.

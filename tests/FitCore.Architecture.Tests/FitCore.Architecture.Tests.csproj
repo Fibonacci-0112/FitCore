@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\FitCore.Client.Auth\FitCore.Client.Auth.csproj" />
     <ProjectReference Include="..\..\src\FitCore.Client.Core\FitCore.Client.Core.csproj" />
     <ProjectReference Include="..\..\src\FitCore.Web\FitCore.Web.csproj" />
     <ProjectReference Include="..\..\src\FitCore.Web.Client\FitCore.Web.Client.csproj" />

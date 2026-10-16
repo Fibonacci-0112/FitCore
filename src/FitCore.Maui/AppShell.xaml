@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    The app's navigation. A signed-out member sees only the account screens; sign-in, the signed-in tabs and sign-out
+    join here as their parts of implementation plan PR 4 land.
+-->
+<Shell x:Class="FitCore.Maui.AppShell"
+       xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:pages="clr-namespace:FitCore.Maui.Pages"
+       xmlns:strings="clr-namespace:FitCore.Client.Core.Resources;assembly=FitCore.Client.Core"
+       Title="{x:Static strings:ShellStrings.AppName}"
+       Shell.FlyoutBehavior="Disabled">
+
+    <ShellContent Route="sign-up"
+                  ContentTemplate="{DataTemplate pages:SignUpPage}" />
+
+</Shell>

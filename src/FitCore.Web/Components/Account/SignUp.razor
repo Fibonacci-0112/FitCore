@@ -6,9 +6,9 @@
 @inject NavigationManager Navigation
 @inject TimeProvider Time
 
-<PageTitle>@TextFormat.PageTitle(AccountStrings.SignUpHeading)</PageTitle>
+<PageTitle>@TextFormat.PageTitle(AccountStrings.SignUpTitle)</PageTitle>
 
-<h1>@AccountStrings.SignUpHeading</h1>
+<h1>@AccountStrings.SignUpTitle</h1>
 
 @if (error is not null)
 {
@@ -30,7 +30,7 @@
     <p>
         <label for="password">@AccountStrings.PasswordLabel</label>
         <InputText id="password" @bind-Value="Input!.Password" type="password" autocomplete="new-password" aria-describedby="password-help" />
-        <small id="password-help">@AccountStrings.NewPasswordHelp</small>
+        <small id="password-help">@AccountStrings.PasswordHelp</small>
     </p>
     <p>
         <label for="birth-date">@AccountStrings.BirthDateLabel</label>
@@ -39,7 +39,7 @@
     </p>
     <InputText @bind-Value="Input!.TimeZone" type="hidden" data-time-zone />
 
-    <button type="submit">@AccountStrings.CreateAccountButton</button>
+    <button type="submit">@AccountStrings.CreateAccount</button>
 </EditForm>
 
 <p><LinkedText Format="@AccountStrings.HaveAccount" Href="account/sign-in" Text="@AccountStrings.SignInLink" /></p>
@@ -102,8 +102,8 @@
         public string? Email { get; set; }
 
         // NFR-SEC-2: at least 15 characters as the only factor, up to 64 allowed, no composition rules.
-        [Required(ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.NewPasswordRequired))]
-        [StringLength(64, MinimumLength = 15, ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.NewPasswordLength))]
+        [Required(ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.PasswordRequired))]
+        [StringLength(64, MinimumLength = 15, ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.PasswordLength))]
         public string? Password { get; set; }
 
         [Required(ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.BirthDateRequired))]

@@ -25,8 +25,8 @@ This plan turns the requirements and the accepted architecture into a build orde
 
 - **Done:** ADR 0003; the RLS and Blazor spikes; the render-mode comparison; the solution scaffold (`FitCore.slnx`, 12 empty modules, both hosts, architecture tests and pipeline tests in CI).
 - **Partly done:** the auth spike. The on-device Sign in with Apple test is still to run ([auth spike §5](spikes/apple-sign-in-and-mfa.md#5-device-test-plan-for-sign-in-with-apple)).
-- **Not started:** the cost model (ADR 0003 follow-up 4). Still missing from the scaffold (follow-up 5): `FitCore.Maui`, the module test projects other than Nutrition's, and `FitCore.Load.Tests`.
-- **R1 progress:** [PR 1](#pr-1-domain-library), the domain library with `FitCore.Domain.Tests` and its coverage gate, [PR 2](#pr-2-database-foundation), the database foundation, and [PR 3](#pr-3-r1-schema-and-rls), the R1 schema and RLS, are done. [PR 4](#pr-4-sign-in-profile-and-app-shells) is in progress, in parts. The first part covers the web session of [ADR 0005](decisions/0005-web-session.md), email sign-up with confirmation, sign-in and sign-out on the web, the 18+ gate in the database, and `GET /v1/profile`. Still to come: the MAUI project and shell, Google, Microsoft and Apple sign-in, TOTP step-up, and sign-in rate limits with Valkey.
+- **Not started:** the cost model (ADR 0003 follow-up 4). Still missing from the scaffold (follow-up 5): the module test projects other than Nutrition's and Identity's, and `FitCore.Load.Tests`.
+- **R1 progress:** [PR 1](#pr-1-domain-library), the domain library with `FitCore.Domain.Tests` and its coverage gate, [PR 2](#pr-2-database-foundation), the database foundation, and [PR 3](#pr-3-r1-schema-and-rls), the R1 schema and RLS, are done. [PR 4](#pr-4-sign-in-profile-and-app-shells) is in progress, in parts. The first part covers the web session of [ADR 0005](decisions/0005-web-session.md), email sign-up with confirmation, sign-in and sign-out on the web, the 18+ gate in the database, and `GET /v1/profile`. The second part adds `FitCore.Maui` with its shell and email sign-up, which calls Supabase Auth through `FitCore.Client.Auth` with the publishable key, and builds the Android app in CI. Until the app handles links, the confirmation link opens fitcore-app's confirm page in the browser. Still to come: MAUI sign-in, the session in the secure store and sign-out, Google, Microsoft and Apple sign-in, TOTP step-up, and sign-in rate limits with Valkey.
 - **Environments:** the first hosted Supabase project exists: `FitCore-Dev-DB` in the `Fibonacci-0112` organization (`https://apauhqfldklnmqthubno.supabase.co`, Postgres 17, `us-west-2`). It is the shared development and staging database for R1. Production is a separate project, created in [PR 9](#pr-9-beta-environments-and-release).
 
 ## 3. Foundations
@@ -56,7 +56,7 @@ Every feature PR builds on these. Each is introduced by the first PR that needs 
 
 - The API validates Supabase JWTs against the project's signing keys. Clinician and admin endpoints require `aal2` (NFR-SEC-3; [auth spike §4](spikes/apple-sign-in-and-mfa.md#4-rules-for-the-build)).
 - **Web:** a server-side session. The Supabase session is held in an HttpOnly, Secure, SameSite cookie, and the browser calls the same-origin `/v1` API. Every cookie-authenticated `/v1` endpoint that changes state requires both antiforgery validation and a same-origin `Origin` or `Sec-Fetch-Site` check. Tokens never reach WebAssembly or local storage. The details are in [ADR 0005](decisions/0005-web-session.md).
-- **MAUI:** `Supabase.Gotrue` behind a thin wrapper, with tokens in the platform secure store (NFR-SEC-8). On iOS, Sign in with Apple uses the native provider with a hashed nonce.
+- **MAUI:** `Supabase.Gotrue` behind a thin wrapper, `FitCore.Client.Auth`, called with the project's publishable key, with tokens in the platform secure store (NFR-SEC-8). Nothing the Blazor client is built from references it, so it never reaches the browser (ADR 0005). On iOS, Sign in with Apple uses the native provider with a hashed nonce.
 - Sign-in methods for R1: email and password, Google, Microsoft and Apple ([BRD §4.2](BRD.md#42-feature-list)), every method on every platform. Apple uses the native flow on iOS and macOS and Apple's web flow elsewhere. Passwords follow NFR-SEC-2; sign-in rate limits and lockout follow NFR-SEC-4.
 
 ### 3.4 API conventions
@@ -78,7 +78,7 @@ Every feature PR builds on these. Each is introduced by the first PR that needs 
 
 - `FitCore.Client.Core` holds the view models (CommunityToolkit.Mvvm 8.4.2 or later) and the typed API client. Commands update the screen optimistically, `await Task.Yield()`, then call the API ([Blazor spike §5](spikes/blazor-prerendering-web-vitals.md#5-rules-for-the-build)). No business logic lives in UI code (NFR-MNT-4).
 - `FitCore.Web.Client` pages prerender on the server and hydrate with WebAssembly. Prerendered data travels in `[PersistentState]`, and actions stay disabled until `RendererInfo.IsInteractive`. Member pages send `Cache-Control: no-store`.
-- `FitCore.Maui` is the XAML app for iOS, Android, Windows and macOS (NFR-CMP-1).
+- `FitCore.Maui` is the XAML app for iOS, Android, Windows and macOS (NFR-CMP-1). The Supabase URL and publishable key are build properties; Debug builds default to the local stack, and other builds must pass both.
 - Strings live in resource files (NFR-L10N-2). Units, currency and time zone come from the profile (NFR-L10N-3).
 - Accessibility is built in from the first screen: WCAG 2.2 AA on the web, screen readers, 200% text and reduce-motion everywhere (NFR-ACC-1 to NFR-ACC-4, NFR-ACC-6).
 
@@ -89,6 +89,7 @@ Every feature PR builds on these. Each is introduced by the first PR that needs 
   - `FitCore.Domain.Tests`: table tests for every BRD §6 rule, with a 90% line-coverage gate in CI (NFR-MNT-1).
   - `FitCore.Modules.<Name>.Tests`: each module against the local Supabase stack, through the real unit of work. They share the database fixture in `FitCore.Testing` with `FitCore.Platform.Tests`.
   - `FitCore.Architecture.Tests`: extended as projects are added.
+  - `FitCore.Client.Tests`: the shared view models, and `FitCore.Client.Auth` against the local Supabase stack.
   - `FitCore.Load.Tests`: a beta-sized run in [PR 9](#pr-9-beta-environments-and-release) for the API latency targets (NFR-PRF-1, NFR-PRF-2), then the 3× peak run before the public launch (NFR-SCL-1).
 - CI gains jobs as their first content lands: pgTAP, dependency and secret scanning plus SAST (NFR-SEC-9), a MAUI build, and Lighthouse with the Playwright tap tests and a payload budget. Every job gates merging to `main` (NFR-MNT-3).
 

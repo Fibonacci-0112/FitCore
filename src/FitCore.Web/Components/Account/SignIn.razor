@@ -67,7 +67,7 @@
         [EmailAddress(ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.EmailInvalid))]
         public string? Email { get; set; }
 
-        [Required(ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.PasswordRequired))]
+        [Required(ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.CurrentPasswordRequired))]
         public string? Password { get; set; }
     }
 }

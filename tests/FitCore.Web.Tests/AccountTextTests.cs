@@ -38,7 +38,7 @@ public sealed class AccountTextTests(FitCoreApp app) : IClassFixture<FitCoreApp>
 
         var page = Decode(await response.Content.ReadAsStringAsync(Cancel));
         Assert.Contains(AccountStrings.EmailRequired, page, StringComparison.Ordinal);
-        Assert.Contains(AccountStrings.PasswordRequired, page, StringComparison.Ordinal);
+        Assert.Contains(AccountStrings.CurrentPasswordRequired, page, StringComparison.Ordinal);
     }
 
     private static string Decode(string html) => System.Net.WebUtility.HtmlDecode(html);
