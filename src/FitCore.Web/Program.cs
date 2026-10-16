@@ -57,16 +57,11 @@ app.MapStaticAssets();
 app.MapHealthChecks("/health");
 app.MapGroup(ApiRoutes.V1).MapModules();
 // The antiforgery middleware only records the token check; an endpoint without form binding must act on it itself.
-// Without a session there's nothing to end, so a second tab's sign-out after the first just lands home. It touches
-// nothing either: a cross-site POST arrives without the SameSite=Lax cookie, and must not delete it or clear the site.
+// Without a session there's nothing to revoke, so a second tab's sign-out after the first just lands home; EndAsync
+// decides whether the browser is cleared.
 app.MapPost("/account/sign-out", async (HttpContext context, IAntiforgery antiforgery, MemberSessions sessions) =>
 {
-    if (!sessions.HasSession(context))
-    {
-        return Results.Redirect("/");
-    }
-
-    if (!await antiforgery.IsRequestValidAsync(context))
+    if (sessions.HasSession(context) && !await antiforgery.IsRequestValidAsync(context))
     {
         return Results.BadRequest();
     }

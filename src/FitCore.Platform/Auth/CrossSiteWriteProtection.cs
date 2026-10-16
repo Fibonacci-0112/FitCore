@@ -36,7 +36,7 @@ public static class CrossSiteWriteProtection
         });
 
     // Behind the load balancer this needs the forwarded scheme and host applied first (PR 9).
-    private static bool IsSameOrigin(HttpRequest request)
+    internal static bool IsSameOrigin(HttpRequest request)
     {
         var origin = request.Headers.Origin.ToString();
         if (origin.Length > 0)

@@ -332,6 +332,26 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
     }
 
     [Fact]
+    public async Task A_key_confirmed_missing_stays_invalid_after_a_fetch_for_another()
+    {
+        await using var fresh = new FitCoreApp();
+        var client = fresh.Browser();
+        var first = fresh.Supabase.IssueToken();
+        fresh.Supabase.RotateKey();
+        var second = fresh.Supabase.IssueToken();
+        fresh.Supabase.RotateKey();
+        Assert.Equal((HttpStatusCode.OK, true), await BearerHomeAsync(client, fresh.Supabase.IssueToken()));
+
+        fresh.Clock.Offset = TimeSpan.FromMinutes(1);
+        Assert.Equal((HttpStatusCode.OK, false), await BearerHomeAsync(client, first));
+        fresh.Clock.Offset = TimeSpan.FromMinutes(2);
+        Assert.Equal((HttpStatusCode.OK, false), await BearerHomeAsync(client, second));
+
+        // During the back-off after the fetch for the second key: the first is still known to be missing.
+        Assert.Equal((HttpStatusCode.OK, false), await BearerHomeAsync(client, first));
+    }
+
+    [Fact]
     public async Task Signing_out_revokes_the_session_and_clears_the_browser()
     {
         (await FitCoreApp.SignInAsync(browser)).Dispose();
@@ -393,6 +413,26 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
 
         // One fetch, then requests answer at once instead of each waiting on Supabase.
         Assert.Single(fresh.Supabase.Requests, r => r.Path == "/auth/v1/.well-known/jwks.json");
+    }
+
+    [Fact]
+    public async Task Signing_out_as_the_refresh_is_refused_still_clears_the_browser()
+    {
+        app.Supabase.ExpiresIn = 60;
+        (await FitCoreApp.SignInAsync(browser)).Dispose();
+        var home = await browser.GetStringAsync("/", Cancel);
+        app.Supabase.Refresh = FakeSupabase.RefreshAnswer.Refused;
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/account/sign-out")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = FitCoreApp.AntiforgeryToken(home) }),
+        };
+        request.Headers.Add("Origin", "https://localhost");
+
+        using var response = await browser.SendAsync(request, Cancel);
+
+        Assert.Equal("/", RedirectPath(response));
+        Assert.Equal("\"cache\", \"storage\"", Assert.Single(response.Headers.GetValues("Clear-Site-Data")));
+        Assert.Contains(response.Headers.GetValues("Set-Cookie"), c => c.StartsWith("__Host-fitcore-session=;", StringComparison.Ordinal));
     }
 
     [Fact]

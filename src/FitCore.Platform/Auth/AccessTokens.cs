@@ -28,7 +28,13 @@ internal sealed class AccessTokens : IDisposable
     private DateTimeOffset _fetchedAt = DateTimeOffset.MinValue;
     private DateTimeOffset _retryAfter = DateTimeOffset.MinValue;
 
-    /// <summary>Key ids that a fetch made for them came back without. Replaced, never changed, so reads need no lock.</summary>
+    /// <summary>The most key ids <see cref="_absent"/> holds; past it, it starts again, so forged ids can't grow it.</summary>
+    private const int MaximumAbsent = 64;
+
+    /// <summary>
+    /// Key ids that a fetch made for them came back without, until a fetch finds them. Replaced, never changed, so
+    /// reads need no lock.
+    /// </summary>
     private ImmutableHashSet<string> _absent = [];
 
     public AccessTokens(IHttpClientFactory httpClients, IOptions<SupabaseOptions> options, TimeProvider time)
@@ -98,7 +104,7 @@ internal sealed class AccessTokens : IDisposable
                 var json = await _httpClients.CreateClient(MemberAuth.HttpClientName).GetStringAsync(url, cancellationToken);
                 _keys = new JsonWebKeySet(json).GetSigningKeys();
                 _fetchedAt = _time.GetUtcNow();
-                _absent = keyId is not null && !Holds(keyId) ? [keyId] : [];
+                _absent = Absent(keyId);
             }
         }
         catch (Exception e) when (e is HttpRequestException || (e is TaskCanceledException && !cancellationToken.IsCancellationRequested))
@@ -128,6 +134,18 @@ internal sealed class AccessTokens : IDisposable
             : _keys;
 
     private bool Holds(string keyId) => _keys.Any(k => k.KeyId == keyId);
+
+    /// <summary>After a fetch: the ids still missing, plus the one it was made for if that's missing too.</summary>
+    private ImmutableHashSet<string> Absent(string? keyId)
+    {
+        var absent = _absent.Where(id => !Holds(id)).ToImmutableHashSet();
+        if (keyId is null || Holds(keyId))
+        {
+            return absent;
+        }
+
+        return absent.Count < MaximumAbsent ? absent.Add(keyId) : [keyId];
+    }
 
     /// <summary>Not before its <c>nbf</c>, not after its <c>exp</c>, both within the clock skew; and the range itself the right way round.</summary>
     private bool IsCurrent(DateTime? notBefore, DateTime? expires, TimeSpan skew)

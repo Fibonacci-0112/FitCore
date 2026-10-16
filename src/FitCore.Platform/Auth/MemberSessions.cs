@@ -29,8 +29,10 @@ public sealed class MemberSessions
     /// Signs the member out (ADR 0005 decision 7): Supabase revokes the session's refresh tokens, the cookie goes, and
     /// <c>Clear-Site-Data</c> tells the browser to drop everything the web client cached. If Supabase can't confirm it
     /// the member stays signed in, rather than leaving a refresh token alive behind a deleted cookie (NFR-SEC-4).
-    /// A request without a session gets nothing: a cross-site POST arrives without the SameSite=Lax cookie, and must not
-    /// delete it or clear the site.
+    /// A request that arrived without a session gets nothing: a cross-site POST comes without the SameSite=Lax cookie,
+    /// and must not delete it or clear the site. One whose session authentication just ended, such as by a refused
+    /// refresh, still gets the browser cleared if it came from this origin. Its antiforgery token was issued to the
+    /// signed-in member and no longer validates, so the origin check stands in for it.
     /// </summary>
     /// <returns>False if Supabase didn't confirm it revoked the session; the cookie is kept so the member can try again.</returns>
     public async Task<bool> EndAsync(HttpContext context)
@@ -40,6 +42,11 @@ public sealed class MemberSessions
         // Authentication already ran for this request and refreshed the session if it was close to expiring.
         if (_cookie.Current(context) is not { } session)
         {
+            if (_cookie.Read(context) is not null && CrossSiteWriteProtection.IsSameOrigin(context.Request))
+            {
+                ClearBrowser(context);
+            }
+
             return true;
         }
 
@@ -57,7 +64,9 @@ public sealed class MemberSessions
         }
 
         SessionCookie.Delete(context);
-        context.Response.Headers["Clear-Site-Data"] = "\"cache\", \"storage\"";
+        ClearBrowser(context);
         return true;
     }
+
+    private static void ClearBrowser(HttpContext context) => context.Response.Headers["Clear-Site-Data"] = "\"cache\", \"storage\"";
 }
