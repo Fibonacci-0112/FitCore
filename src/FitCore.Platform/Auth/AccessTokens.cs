@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Security.Claims;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -26,7 +27,9 @@ internal sealed class AccessTokens : IDisposable
     private IList<SecurityKey> _keys = [];
     private DateTimeOffset _fetchedAt = DateTimeOffset.MinValue;
     private DateTimeOffset _retryAfter = DateTimeOffset.MinValue;
-    private bool _fetchFailed;
+
+    /// <summary>Key ids that a fetch made for them came back without. Replaced, never changed, so reads need no lock.</summary>
+    private ImmutableHashSet<string> _absent = [];
 
     public AccessTokens(IHttpClientFactory httpClients, IOptions<SupabaseOptions> options, TimeProvider time)
     {
@@ -95,7 +98,7 @@ internal sealed class AccessTokens : IDisposable
                 var json = await _httpClients.CreateClient(MemberAuth.HttpClientName).GetStringAsync(url, cancellationToken);
                 _keys = new JsonWebKeySet(json).GetSigningKeys();
                 _fetchedAt = _time.GetUtcNow();
-                _fetchFailed = false;
+                _absent = keyId is not null && !Holds(keyId) ? [keyId] : [];
             }
         }
         catch (Exception e) when (e is HttpRequestException || (e is TaskCanceledException && !cancellationToken.IsCancellationRequested))
@@ -103,7 +106,6 @@ internal sealed class AccessTokens : IDisposable
             // Supabase is down or timed out. Requests keep the keys already known, and none of them waits on another
             // fetch until the back-off ends, so an outage doesn't queue every request behind the HttpClient timeout.
             _retryAfter = _time.GetUtcNow() + MinimumRefetch;
-            _fetchFailed = true;
         }
         finally
         {
@@ -114,14 +116,18 @@ internal sealed class AccessTokens : IDisposable
     }
 
     /// <summary>
-    /// The keys to validate with, or an error if this instance couldn't fetch the ones it needs: none at all, or not
-    /// the token's key because the last fetch failed. A token signed with a key rotated in during an outage is then
-    /// unverifiable rather than invalid, so a valid session isn't ended (ADR 0005 decision 4).
+    /// The keys to validate with, or an error if this instance couldn't get the ones the token needs: none at all, or
+    /// not the token's key, unless a fetch made for that key came back without it. A key that isn't held because the
+    /// last fetch failed, or because the back-off stopped a fetch so soon after the last one, may simply be newly
+    /// rotated in: the token is then unverifiable rather than invalid, so a valid session isn't ended (ADR 0005
+    /// decision 4). The next fetch after the back-off settles it.
     /// </summary>
     private IList<SecurityKey> KnownKeys(string? keyId) =>
-        _keys.Count == 0 || (_fetchFailed && keyId is not null && _keys.All(k => k.KeyId != keyId))
+        _keys.Count == 0 || (keyId is not null && !Holds(keyId) && !_absent.Contains(keyId))
             ? throw new HttpRequestException("Supabase Auth's signing keys are unavailable.")
             : _keys;
+
+    private bool Holds(string keyId) => _keys.Any(k => k.KeyId == keyId);
 
     /// <summary>Not before its <c>nbf</c>, not after its <c>exp</c>, both within the clock skew; and the range itself the right way round.</summary>
     private bool IsCurrent(DateTime? notBefore, DateTime? expires, TimeSpan skew)
@@ -151,6 +157,6 @@ internal sealed class AccessTokens : IDisposable
         }
 
         // A key id the set doesn't hold may mean the project rotated its keys.
-        return keyId is not null && age > MinimumRefetch && _keys.All(k => k.KeyId != keyId);
+        return keyId is not null && age > MinimumRefetch && !Holds(keyId);
     }
 }

@@ -29,6 +29,8 @@ public sealed class MemberSessions
     /// Signs the member out (ADR 0005 decision 7): Supabase revokes the session's refresh tokens, the cookie goes, and
     /// <c>Clear-Site-Data</c> tells the browser to drop everything the web client cached. If Supabase can't confirm it
     /// the member stays signed in, rather than leaving a refresh token alive behind a deleted cookie (NFR-SEC-4).
+    /// A request without a session gets nothing: a cross-site POST arrives without the SameSite=Lax cookie, and must not
+    /// delete it or clear the site.
     /// </summary>
     /// <returns>False if Supabase didn't confirm it revoked the session; the cookie is kept so the member can try again.</returns>
     public async Task<bool> EndAsync(HttpContext context)
@@ -36,20 +38,22 @@ public sealed class MemberSessions
         ArgumentNullException.ThrowIfNull(context);
 
         // Authentication already ran for this request and refreshed the session if it was close to expiring.
-        if (_cookie.Current(context) is { } session)
+        if (_cookie.Current(context) is not { } session)
         {
-            if (context.User.Identity?.IsAuthenticated != true)
-            {
-                // A session authentication couldn't use: Supabase was unreachable and the access token has expired.
-                return false;
-            }
+            return true;
+        }
 
-            // Only a confirmed sign-out deletes the cookie: a rejected API key, for one, revokes nothing.
-            var outcome = await _auth.SignOutAsync(session.AccessToken, context.Connection.RemoteIpAddress, context.RequestAborted);
-            if (outcome.Status != AuthStatus.SessionEnded)
-            {
-                return false;
-            }
+        if (context.User.Identity?.IsAuthenticated != true)
+        {
+            // A session authentication couldn't use: Supabase was unreachable and the access token has expired.
+            return false;
+        }
+
+        // Only a confirmed sign-out deletes the cookie: a rejected API key, for one, revokes nothing.
+        var outcome = await _auth.SignOutAsync(session.AccessToken, context.Connection.RemoteIpAddress, context.RequestAborted);
+        if (outcome.Status != AuthStatus.SessionEnded)
+        {
+            return false;
         }
 
         SessionCookie.Delete(context);

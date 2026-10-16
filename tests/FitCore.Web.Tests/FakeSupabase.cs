@@ -49,6 +49,9 @@ public sealed class FakeSupabase : HttpMessageHandler
 
     public LogoutAnswer Logout { get; set; } = LogoutAnswer.SignedOut;
 
+    /// <summary>Whether password sign-in is turned away at the gateway, as when fitcore-app's API key is wrong.</summary>
+    public bool SignInKeyRejected { get; set; }
+
     /// <summary>Characters of user metadata in the access tokens it issues, to make sessions bigger than one cookie.</summary>
     public int MetadataLength { get; set; }
 
@@ -109,6 +112,7 @@ public sealed class FakeSupabase : HttpMessageHandler
         return path switch
         {
             "/auth/v1/.well-known/jwks.json" => JwksReachable ? Json(HttpStatusCode.OK, Jwks()) : throw new HttpRequestException("Supabase Auth is unreachable."),
+            "/auth/v1/token?grant_type=password" when SignInKeyRejected => KeyRejectedResponse(),
             "/auth/v1/token?grant_type=password" => (string?)body?["password"] == Password
                 ? Json(HttpStatusCode.OK, NewSession())
                 : Json(HttpStatusCode.BadRequest, new JsonObject { ["error_code"] = "invalid_credentials" }),
@@ -116,14 +120,14 @@ public sealed class FakeSupabase : HttpMessageHandler
             {
                 RefreshAnswer.NewSession => Json(HttpStatusCode.OK, NewSession()),
                 RefreshAnswer.Refused => Json(HttpStatusCode.BadRequest, new JsonObject { ["error_code"] = "refresh_token_not_found" }),
-                RefreshAnswer.KeyRejected => Json(HttpStatusCode.Unauthorized, new JsonObject { ["message"] = "Invalid API key" }),
+                RefreshAnswer.KeyRejected => KeyRejectedResponse(),
                 RefreshAnswer.ServerError => Json(HttpStatusCode.BadGateway, new JsonObject()),
                 _ => throw new HttpRequestException("Supabase Auth is unreachable."),
             },
             "/auth/v1/logout?scope=local" => Logout switch
             {
                 LogoutAnswer.SignedOut => new HttpResponseMessage(HttpStatusCode.NoContent),
-                LogoutAnswer.KeyRejected => Json(HttpStatusCode.Unauthorized, new JsonObject { ["message"] = "Invalid API key" }),
+                LogoutAnswer.KeyRejected => KeyRejectedResponse(),
                 _ => new HttpResponseMessage(HttpStatusCode.BadGateway),
             },
             _ => new HttpResponseMessage(HttpStatusCode.NotFound),
@@ -162,6 +166,10 @@ public sealed class FakeSupabase : HttpMessageHandler
             }),
         };
     }
+
+    /// <summary>The gateway's answer to a wrong API key: no error code, unlike Auth's own refusals.</summary>
+    private static HttpResponseMessage KeyRejectedResponse() =>
+        Json(HttpStatusCode.Unauthorized, new JsonObject { ["message"] = "Invalid API key" });
 
     private static HttpResponseMessage Json(HttpStatusCode status, JsonObject body) =>
         new(status) { Content = JsonContent.Create(body) };
