@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FitCore.Contracts\FitCore.Contracts.csproj" />
     <ProjectReference Include="..\FitCore.Domain\FitCore.Domain.csproj" />
   </ItemGroup>
