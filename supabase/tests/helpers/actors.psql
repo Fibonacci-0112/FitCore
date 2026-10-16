@@ -1,0 +1,96 @@
+-- The six actors of NFR-PRV-2, for pgTAP tests. Include it inside a test's transaction, after `begin`:
+--
+--   \ir helpers/actors.psql
+--
+-- It creates the tests schema, six auth.users rows and the functions below, and the test's rollback removes them.
+-- The file ends in .psql so `supabase test db` doesn't run it as a test of its own.
+--
+--   tests.actor(name)        the actor's user id
+--   tests.act_as(name)       SET LOCAL ROLE authenticated with the actor's claims, as the API's unit of work does
+--   tests.act_as_anon()      SET LOCAL ROLE anon with no claims, as a request with only the public key
+--   tests.act_as_postgres()  back to the test's own role, to insert fixtures or check rows directly
+--
+-- Grantees are plain members until a test gives them a care.relationships row: grantee_in_scope an active grant
+-- with the scope under test, grantee_out_of_scope an active grant without it, and revoked_grantee a revoked one.
+-- The admin actor is an authenticated user marked admin in app_metadata, signed in at aal2.
+
+create extension if not exists pgtap with schema extensions;
+
+create schema tests;
+grant usage on schema tests to anon, authenticated;
+
+create table tests.actors (
+  name text primary key,
+  id uuid not null unique,
+  claims jsonb not null
+);
+-- Only tests.actor and tests.claims read it, as the definer.
+revoke all on tests.actors from public;
+
+insert into tests.actors (name, id, claims)
+select a.name, a.id, jsonb_build_object(
+    'sub', a.id,
+    'role', 'authenticated',
+    'aud', 'authenticated',
+    'aal', a.aal,
+    'app_metadata', jsonb_build_object('roles', a.roles))
+from (values
+  ('owner',                'a0000000-0000-4000-8000-000000000001'::uuid, 'aal1', '[]'::jsonb),
+  ('other_member',         'a0000000-0000-4000-8000-000000000002'::uuid, 'aal1', '[]'::jsonb),
+  ('grantee_in_scope',     'a0000000-0000-4000-8000-000000000003'::uuid, 'aal1', '["coach"]'::jsonb),
+  ('grantee_out_of_scope', 'a0000000-0000-4000-8000-000000000004'::uuid, 'aal1', '["coach"]'::jsonb),
+  ('revoked_grantee',      'a0000000-0000-4000-8000-000000000005'::uuid, 'aal1', '["coach"]'::jsonb),
+  ('admin',                'a0000000-0000-4000-8000-000000000006'::uuid, 'aal2', '["admin"]'::jsonb)
+) as a (name, id, aal, roles);
+
+insert into auth.users (id, aud, role, email)
+select id, 'authenticated', 'authenticated', replace(name, '_', '-') || '@actors.test'
+from tests.actors;
+
+create function tests.actor(p_name text) returns uuid
+language sql stable security definer set search_path = ''
+as $$
+  select id from tests.actors where name = p_name
+$$;
+
+create function tests.claims(p_name text) returns jsonb
+language sql stable security definer set search_path = ''
+as $$
+  select claims from tests.actors where name = p_name
+$$;
+
+-- These three can't be security definer: Postgres doesn't allow SET ROLE inside one. They run as the caller, so a
+-- test can switch from one actor to another without going back to postgres first.
+create function tests.act_as(p_name text) returns void
+language plpgsql set search_path = ''
+as $$
+declare
+  v_claims jsonb := tests.claims(p_name);
+begin
+  if v_claims is null then
+    raise exception 'Unknown actor %', p_name;
+  end if;
+  perform set_config('request.jwt.claims', v_claims::text, true);
+  set local role authenticated;
+end
+$$;
+
+create function tests.act_as_anon() returns void
+language plpgsql set search_path = ''
+as $$
+begin
+  perform set_config('request.jwt.claims', '', true);
+  set local role anon;
+end
+$$;
+
+create function tests.act_as_postgres() returns void
+language plpgsql set search_path = ''
+as $$
+begin
+  perform set_config('request.jwt.claims', '', true);
+  set local role postgres;
+end
+$$;
+
+grant execute on all functions in schema tests to anon, authenticated;
