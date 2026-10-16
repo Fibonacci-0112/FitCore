@@ -1,5 +1,6 @@
 using FitCore.Contracts;
 using FitCore.Modules;
+using FitCore.Platform.Data;
 using FitCore.Platform.Http;
 using FitCore.Platform.Modules;
 using FitCore.Web.Components;
@@ -11,6 +12,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 builder.Services.AddHealthChecks();
 builder.Services.AddProblemDetails();
+builder.Services.AddFitCoreDatabase(builder.Configuration);
 builder.Services.AddModules(builder.Configuration, ModuleCatalog.All);
 
 var app = builder.Build();

@@ -25,8 +25,8 @@ This plan turns the requirements and the accepted architecture into a build orde
 
 - **Done:** ADR 0003; the RLS and Blazor spikes; the render-mode comparison; the solution scaffold (`FitCore.slnx`, 12 empty modules, both hosts, architecture tests and pipeline tests in CI).
 - **Partly done:** the auth spike. The on-device Sign in with Apple test is still to run ([auth spike §5](spikes/apple-sign-in-and-mfa.md#5-device-test-plan-for-sign-in-with-apple)).
-- **Not started:** the cost model (ADR 0003 follow-up 4). Still missing from the scaffold (follow-up 5): `FitCore.Maui`, `supabase/` with the pgTAP harness, the module test projects and `FitCore.Load.Tests`.
-- **R1 progress:** [PR 1](#pr-1-domain-library), the domain library with `FitCore.Domain.Tests` and its coverage gate, is done.
+- **Not started:** the cost model (ADR 0003 follow-up 4). Still missing from the scaffold (follow-up 5): `FitCore.Maui`, the module test projects and `FitCore.Load.Tests`.
+- **R1 progress:** [PR 1](#pr-1-domain-library), the domain library with `FitCore.Domain.Tests` and its coverage gate, is done. [PR 2](#pr-2-database-foundation), the database foundation, is in review.
 - **Environments:** the first hosted Supabase project exists: `FitCore-Dev-DB` in the `Fibonacci-0112` organization (`https://apauhqfldklnmqthubno.supabase.co`, Postgres 17, `us-west-2`). It is the shared development and staging database for R1. Production is a separate project, created in [PR 9](#pr-9-beta-environments-and-release).
 
 ## 3. Foundations
@@ -127,7 +127,8 @@ Nine PRs, each scoped to one item and merged green. A feature PR may land its we
 
 ### PR 2: Database foundation
 
-- **Scope:** `supabase/` (config, the `fitcore_api` role, the shared pgTAP tests in [section 3.1](#31-database)), a pgTAP CI job, the Platform unit of work, the Aspire AppHost and the first module test project.
+- **Scope:** `supabase/` (config, the module schemas, the `fitcore_api` role, the shared pgTAP tests in [section 3.1](#31-database)), a pgTAP CI job, the Platform unit of work, the Aspire AppHost and the first database test project, `FitCore.Platform.Tests`.
+- **Deferred:** the first module test project moves to PR 3, because a module test needs the module's tables; PR 3 also moves the database fixture into a shared place for the module tests. Valkey joins the AppHost with the rate limits that use it, and the EF Core claims interceptor with the first module that uses EF Core ([section 3](#3-foundations): each foundation arrives with the first PR that needs it).
 - **Accept:**
   - A query without an identity fails with 42501.
   - No code path issues a session-level `SET`.
@@ -245,7 +246,7 @@ Each phase starts with its prerequisites and ends when its NFRs are met. Each ge
 | ADR 0005: web session design | PR 4 | Cookie-held Supabase session with a same-origin API, as in [section 3.3](#33-authentication) |
 | Secret store | PR 9 | AWS Secrets Manager or SSM Parameter Store |
 | Error-tracking and transactional-email vendors | PR 4 (email), PR 9 (errors) | Both must meet NFR-PRV-6 scrubbing |
-| Supabase plan, connection mode and auth settings | PR 2 | Pro is needed for PITR. Confirm MFA and leaked-password protection on the plan. Choose Supavisor session mode or the IPv4 add-on |
+| Supabase plan, connection mode and auth settings | PR 9 (plan, connection mode), PR 4 (auth settings) | Pro is needed for PITR. Confirm MFA and leaked-password protection on the plan. Choose Supavisor session mode or the IPv4 add-on. PR 2's unit of work accepts either and refuses transaction mode, and development uses session mode, which works over IPv4 ([`supabase/README.md`](../supabase/README.md#hosted-projects)) |
 | Sign in with Apple on Android, Windows and web | PR 4 | [Auth spike §6](spikes/apple-sign-in-and-mfa.md#6-open-points) |
 | Open items carried over | Various | [NFR §17](NFR.md#17-open-items) items 1–5 and [BRD §10](BRD.md#10-open-questions-and-decisions-needed) |
 

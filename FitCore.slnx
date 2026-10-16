@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/FitCore.AppHost/FitCore.AppHost.csproj" />
     <Project Path="src/FitCore.Client.Core/FitCore.Client.Core.csproj" />
     <Project Path="src/FitCore.Contracts/FitCore.Contracts.csproj" />
     <Project Path="src/FitCore.Domain/FitCore.Domain.csproj" />
@@ -25,6 +26,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/FitCore.Architecture.Tests/FitCore.Architecture.Tests.csproj" />
     <Project Path="tests/FitCore.Domain.Tests/FitCore.Domain.Tests.csproj" />
+    <Project Path="tests/FitCore.Platform.Tests/FitCore.Platform.Tests.csproj" />
     <Project Path="tests/FitCore.Web.Tests/FitCore.Web.Tests.csproj" />
   </Folder>
 </Solution>

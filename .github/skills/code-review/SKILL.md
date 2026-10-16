@@ -72,17 +72,18 @@ Don't report a finding you can't tie to a concrete failure or a written rule. Do
 ### 4.3 Database, SQL and RLS
 
 - **RLS on every private table**, and nothing private readable with the anon key (NFR-PRV-1).
-- **pgTAP tests for each actor** on every private table: owner, other member, grantee in scope, grantee out of scope, revoked grantee and admin (NFR-PRV-2). Every migration ships with pgTAP tests (NFR-MNT-2). A new table or policy without them is blocking.
+- **pgTAP tests for each actor** on every private table: owner, other member, grantee in scope, grantee out of scope, revoked grantee and admin (NFR-PRV-2), using the helper in `supabase/tests/helpers/actors.psql`. Every migration ships with pgTAP tests (NFR-MNT-2). A new table or policy without them is blocking.
+- **Views** in a FitCore schema are `security_invoker`, and there are no materialized views or foreign tables there; `supabase/tests/rls_coverage.test.sql` checks both.
 - **Clinician grants are accepted only at `aal2`** in RLS, as in the spike's `care.has_grant`.
 - **Migrations** live under `supabase/`, are forward-only and follow expand-then-contract (NFR-OPS-6, ADR 0003). Flag edits to an already-merged migration and destructive changes without an expand step.
 - **Module schemas.** Each module owns one schema (`identity`, `catalog`, `nutrition`, `training`, `progress`, `targets`, `care`, `sync`, `billing`, `integrations`, `data_rights`, `audit`). Flag cross-schema writes; cross-module side effects go through the transactional outbox.
-- **The API's login role has no table grants.** It can only switch to `authenticated`.
+- **The API's login role has no table grants.** `fitcore_api` can only switch to `authenticated`; a migration that grants it anything is blocking. Grants go to `authenticated`, table by table, never to `anon` or `public`.
 - **Writes are idempotent by client UUID**, so a retried request doesn't create duplicates.
 
 ### 4.4 API and database identity (ADR 0003, RLS spike)
 
 - **Transaction-scoped identity only.** Each unit of work runs `SET LOCAL ROLE authenticated` and `set_config('request.jwt.claims', …, true)`. Session-level `SET`, `SET ROLE` or `set_config(…, false)` on an API connection is blocking.
-- **Identity first, same round trip.** Role and claims go in the same batch as the first statement. EF Core work always runs in a transaction with the claims interceptor; work outside one should fail closed.
+- **Identity first, same round trip.** Role and claims go in the same batch as the first statement. Server code runs SQL only through `FitCoreDatabase` in `FitCore.Platform` (`UnitOfWork` or `ReadAsync`); a module that opens its own Npgsql connection or data source is blocking. EF Core work always runs in a transaction with the claims interceptor; work outside one should fail closed.
 - **Connections** go through Supavisor session mode or directly, never transaction mode, unless the PR follows rule 6 of the [spike](../../../docs/spikes/rls-connection-pooling.md#4-rules-for-the-api) and reruns its checks.
 - **Two authorization layers.** API policies check roles, entitlements and live grants; RLS checks again. Don't accept "RLS will catch it" in place of an API policy, or the reverse.
 - **The API is the only way in.** Clients call versioned REST (`/v1`) through the typed C# client. The Supabase Data API stays disabled for module schemas. Breaking contract changes need a new version (NFR-CMP-5).
