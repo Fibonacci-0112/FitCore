@@ -136,6 +136,13 @@ public sealed class MemberAuth
             return new(AuthStatus.Unavailable);
         }
 
+        if (errorCode is null && status is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+        {
+            // Auth answers its own refusals with an error code. Without one, the gateway turned away fitcore-app's API
+            // key: a server problem, which the member's details didn't cause and can't fix.
+            return new(AuthStatus.Unavailable);
+        }
+
         if (path.StartsWith("token?grant_type=refresh_token", StringComparison.Ordinal))
         {
             // Only Supabase saying the token or session is gone ends the session (ADR 0005 decision 4). Anything else,

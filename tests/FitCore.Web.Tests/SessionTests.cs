@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 namespace FitCore.Web.Tests;
@@ -22,6 +24,7 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
         app.Supabase.Refresh = FakeSupabase.RefreshAnswer.NewSession;
         app.Supabase.Logout = FakeSupabase.LogoutAnswer.SignedOut;
         app.Supabase.MetadataLength = 0;
+        app.Supabase.SignInKeyRejected = false;
         app.Supabase.Requests.Clear();
         browser = app.Browser();
     }
@@ -83,13 +86,29 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
         (await FitCoreApp.SignInAsync(browser)).Dispose();
         var html = await browser.GetStringAsync("/", Cancel);
 
-        // The page, and the component state persisted into it for WebAssembly, which is base64.
-        var state = PersistedState().Matches(html).Select(m => Encoding.UTF8.GetString(Convert.FromBase64String(m.Groups[1].Value)));
+        // The page, and the component state persisted into it for WebAssembly: base64 JSON whose values are base64 again.
+        var state = PersistedState().Matches(html).SelectMany(m => Decoded(m.Groups[1].Value)).ToList();
         var everything = string.Join('\n', state.Prepend(html));
+
+        // The decoding reaches the inner values: the authentication state persisted there names the member.
+        Assert.Contains(state, text => text.Contains(app.Supabase.Member.ToString(), StringComparison.Ordinal));
 
         Assert.Contains(SignedIn, html, StringComparison.Ordinal);
         Assert.NotEmpty(app.Supabase.IssuedTokens);
         Assert.All(app.Supabase.IssuedTokens, token => Assert.DoesNotContain(token, everything, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_rejected_API_key_at_sign_in_says_the_service_is_unavailable()
+    {
+        app.Supabase.SignInKeyRejected = true;
+
+        using var response = await FitCoreApp.SignInAsync(browser);
+
+        var page = await response.Content.ReadAsStringAsync(Cancel);
+        Assert.Contains("couldn&#x27;t reach its sign-in service", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("don&#x27;t match an account", page, StringComparison.Ordinal);
+        Assert.False(response.Headers.TryGetValues("Set-Cookie", out var cookies) && cookies.Any(c => c.StartsWith("__Host-fitcore-session=", StringComparison.Ordinal)));
     }
 
     [Fact]
@@ -292,6 +311,47 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
     }
 
     [Fact]
+    public async Task A_key_rotated_in_right_after_a_fetch_is_unverifiable_until_the_next_one()
+    {
+        await using var fresh = new FitCoreApp();
+        var client = fresh.Browser();
+        var retired = fresh.Supabase.IssueToken();
+        Assert.Equal((HttpStatusCode.OK, true), await BearerHomeAsync(client, retired));
+
+        // Within the back-off since that fetch, so the new key can't be fetched yet: 503, not a signed-out member.
+        fresh.Supabase.RotateKey();
+        Assert.Equal((HttpStatusCode.ServiceUnavailable, false), await BearerHomeAsync(client, fresh.Supabase.IssueToken()));
+
+        fresh.Clock.Offset = TimeSpan.FromMinutes(1);
+        Assert.Equal((HttpStatusCode.OK, true), await BearerHomeAsync(client, fresh.Supabase.IssueToken()));
+
+        // A key a fetch made for it came back without is invalid, then and during the back-off.
+        fresh.Clock.Offset = TimeSpan.FromMinutes(2);
+        Assert.Equal((HttpStatusCode.OK, false), await BearerHomeAsync(client, retired));
+        Assert.Equal((HttpStatusCode.OK, false), await BearerHomeAsync(client, retired));
+    }
+
+    [Fact]
+    public async Task A_key_confirmed_missing_stays_invalid_after_a_fetch_for_another()
+    {
+        await using var fresh = new FitCoreApp();
+        var client = fresh.Browser();
+        var first = fresh.Supabase.IssueToken();
+        fresh.Supabase.RotateKey();
+        var second = fresh.Supabase.IssueToken();
+        fresh.Supabase.RotateKey();
+        Assert.Equal((HttpStatusCode.OK, true), await BearerHomeAsync(client, fresh.Supabase.IssueToken()));
+
+        fresh.Clock.Offset = TimeSpan.FromMinutes(1);
+        Assert.Equal((HttpStatusCode.OK, false), await BearerHomeAsync(client, first));
+        fresh.Clock.Offset = TimeSpan.FromMinutes(2);
+        Assert.Equal((HttpStatusCode.OK, false), await BearerHomeAsync(client, second));
+
+        // During the back-off after the fetch for the second key: the first is still known to be missing.
+        Assert.Equal((HttpStatusCode.OK, false), await BearerHomeAsync(client, first));
+    }
+
+    [Fact]
     public async Task Signing_out_revokes_the_session_and_clears_the_browser()
     {
         (await FitCoreApp.SignInAsync(browser)).Dispose();
@@ -356,6 +416,40 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
     }
 
     [Fact]
+    public async Task Signing_out_as_the_refresh_is_refused_still_clears_the_browser()
+    {
+        app.Supabase.ExpiresIn = 60;
+        (await FitCoreApp.SignInAsync(browser)).Dispose();
+        var home = await browser.GetStringAsync("/", Cancel);
+        app.Supabase.Refresh = FakeSupabase.RefreshAnswer.Refused;
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/account/sign-out")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = FitCoreApp.AntiforgeryToken(home) }),
+        };
+        request.Headers.Add("Origin", "https://localhost");
+
+        using var response = await browser.SendAsync(request, Cancel);
+
+        Assert.Equal("/", RedirectPath(response));
+        Assert.Equal("\"cache\", \"storage\"", Assert.Single(response.Headers.GetValues("Clear-Site-Data")));
+        Assert.Contains(response.Headers.GetValues("Set-Cookie"), c => c.StartsWith("__Host-fitcore-session=;", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_cross_site_sign_out_without_the_cookie_changes_nothing()
+    {
+        // SameSite=Lax keeps the cookie off a cross-site POST, so the browser may still hold a session.
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/account/sign-out") { Content = new FormUrlEncodedContent([]) };
+        request.Headers.Add("Origin", "https://evil.example");
+
+        using var response = await app.Browser().SendAsync(request, Cancel);
+
+        Assert.Equal("/", RedirectPath(response));
+        Assert.False(response.Headers.Contains("Clear-Site-Data"));
+        Assert.False(response.Headers.Contains("Set-Cookie"));
+    }
+
+    [Fact]
     public async Task Signing_out_needs_the_antiforgery_token()
     {
         (await FitCoreApp.SignInAsync(browser)).Dispose();
@@ -366,6 +460,47 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.DoesNotContain(app.Supabase.Requests, r => r.Path.StartsWith("/auth/v1/logout", StringComparison.Ordinal));
     }
+
+    /// <summary>The text, and every base64 string in it once decoded, in JSON values to any depth.</summary>
+    private static IEnumerable<string> Decoded(string base64)
+    {
+        string text;
+        try
+        {
+            text = Encoding.UTF8.GetString(Convert.FromBase64String(base64));
+        }
+        catch (FormatException)
+        {
+            yield break;
+        }
+
+        yield return text;
+        JsonNode? json;
+        try
+        {
+            json = JsonNode.Parse(text);
+        }
+        catch (JsonException)
+        {
+            yield break;
+        }
+
+        foreach (var value in Strings(json))
+        {
+            foreach (var inner in Decoded(value))
+            {
+                yield return inner;
+            }
+        }
+    }
+
+    private static IEnumerable<string> Strings(JsonNode? node) => node switch
+    {
+        JsonObject o => o.SelectMany(p => Strings(p.Value)),
+        JsonArray a => a.SelectMany(Strings),
+        JsonValue v when v.TryGetValue<string>(out var text) => [text],
+        _ => [],
+    };
 
     /// <summary>The home page as a bearer caller: its status, and whether it shows the caller signed in.</summary>
     private static async Task<(HttpStatusCode Status, bool SignedIn)> BearerHomeAsync(HttpClient client, string token)

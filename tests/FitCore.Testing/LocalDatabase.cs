@@ -98,12 +98,18 @@ public sealed class LocalDatabase : IAsyncLifetime
         return (T)(await command.ExecuteScalarAsync())!;
     }
 
-    /// <summary>Adds a user to <c>auth.users</c> and returns the identity a unit of work runs as.</summary>
+    /// <summary>
+    /// Adds a user to <c>auth.users</c> and returns the identity a unit of work runs as. The user signed up with
+    /// Google, so it starts without a profile: an email sign-up needs a birth date and gets one.
+    /// </summary>
     public async Task<DbIdentity> CreateMemberAsync(string assuranceLevel = "aal1")
     {
         var id = Guid.NewGuid();
         await ExecuteAsync(
-            "insert into auth.users (id, aud, role, email) values ($1, 'authenticated', 'authenticated', $2)",
+            """
+            insert into auth.users (id, aud, role, email, raw_app_meta_data)
+            values ($1, 'authenticated', 'authenticated', $2, '{"provider": "google", "providers": ["google"]}')
+            """,
             id,
             $"{id:N}@members.test");
         _members.Add(id);

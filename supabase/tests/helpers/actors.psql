@@ -49,8 +49,10 @@ from (values
   ('admin',                'a0000000-0000-4000-8000-000000000006'::uuid, 'aal2', '["admin"]'::jsonb)
 ) as a (name, id, aal, roles);
 
-insert into auth.users (id, aud, role, email)
-select id, 'authenticated', 'authenticated', replace(name, '_', '-') || '@actors.test'
+-- Signed up with Google, so they start without a profile: an email sign-up needs a birth date and gets one.
+insert into auth.users (id, aud, role, email, raw_app_meta_data)
+select id, 'authenticated', 'authenticated', replace(name, '_', '-') || '@actors.test',
+  '{"provider": "google", "providers": ["google"]}'
 from tests.actors;
 
 create function tests.actor(p_name text) returns uuid
