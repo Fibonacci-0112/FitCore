@@ -55,7 +55,7 @@ Every feature PR builds on these. Each is introduced by the first PR that needs 
 ### 3.3 Authentication
 
 - The API validates Supabase JWTs against the project's signing keys. Clinician and admin endpoints require `aal2` (NFR-SEC-3; [auth spike §4](spikes/apple-sign-in-and-mfa.md#4-rules-for-the-build)).
-- **Web:** a server-side session. The Supabase session is held in an HttpOnly, Secure, SameSite cookie, and the browser calls the same-origin `/v1` API. Every cookie-authenticated `/v1` endpoint that changes state requires antiforgery validation, or an equivalent Origin and CSRF-token check. Tokens never reach WebAssembly or local storage. The details are in [ADR 0005](decisions/0005-web-session.md).
+- **Web:** a server-side session. The Supabase session is held in an HttpOnly, Secure, SameSite cookie, and the browser calls the same-origin `/v1` API. Every cookie-authenticated `/v1` endpoint that changes state requires both antiforgery validation and a same-origin `Origin` or `Sec-Fetch-Site` check. Tokens never reach WebAssembly or local storage. The details are in [ADR 0005](decisions/0005-web-session.md).
 - **MAUI:** `Supabase.Gotrue` behind a thin wrapper, with tokens in the platform secure store (NFR-SEC-8). On iOS, Sign in with Apple uses the native provider with a hashed nonce.
 - Sign-in methods for R1: email and password, Google, Microsoft and Apple ([BRD §4.2](BRD.md#42-feature-list)). Passwords follow NFR-SEC-2; sign-in rate limits and lockout follow NFR-SEC-4.
 
