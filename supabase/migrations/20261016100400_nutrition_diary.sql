@@ -113,22 +113,25 @@ create policy food_prices_delete_own on nutrition.food_prices for delete to auth
   using (member_id = (select auth.uid()));
 
 -- Entries: the member writes; a nutrition grantee reads. A new or edited entry may name only a food the member can
--- see and a price of the member's own.
+-- see, a serving of that food and a price of the member's own for it. A serving or price needs the food beside it:
+-- with food_id null the composite keys don't apply, and the plain serving key checks existence without RLS.
 create policy diary_entries_select on nutrition.diary_entries for select to authenticated
   using (member_id = (select auth.uid()) or care.has_grant(member_id, 'nutrition'));
 create policy diary_entries_insert_own on nutrition.diary_entries for insert to authenticated
   with check (
     member_id = (select auth.uid())
-    -- Checked here rather than as table constraints, so deleting a serving or food later only clears the reference.
+    -- Checked here rather than as a table constraint, so deleting a serving later only clears the reference.
     and (unit <> 'serving' or serving_id is not null)
-    and (price_id is null or food_id is not null)
+    and ((serving_id is null and price_id is null) or food_id is not null)
     and (food_id is null or exists (select 1 from catalog.foods f where f.id = food_id))
     and (price_id is null or exists (
       select 1 from nutrition.food_prices p where p.id = price_id and p.member_id = (select auth.uid()))));
+-- Deleting a food clears serving_id and price_id along with food_id, so an entry left behind still passes.
 create policy diary_entries_update_own on nutrition.diary_entries for update to authenticated
   using (member_id = (select auth.uid()))
   with check (
     member_id = (select auth.uid())
+    and ((serving_id is null and price_id is null) or food_id is not null)
     and (food_id is null or exists (select 1 from catalog.foods f where f.id = food_id))
     and (price_id is null or exists (
       select 1 from nutrition.food_prices p where p.id = price_id and p.member_id = (select auth.uid()))));

@@ -3,7 +3,7 @@
 begin;
 \ir helpers/actors.psql
 
-select plan(58);
+select plan(63);
 
 select tests.grant_scope('nutrition');
 select tests.act_as_postgres();
@@ -16,7 +16,8 @@ values ('c0000000-0000-4000-8000-000000000001', null, 'usda', '173944', 'Oats, r
        ('c0000000-0000-4000-8000-000000000021', tests.actor('other_member'), 'custom', null, 'Stew', 'per_100g', 120, 8, 10, 5);
 insert into catalog.food_servings (id, food_id, label, grams)
 values ('c0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000001', '1 cup', 81),
-       ('c0000000-0000-4000-8000-000000000012', 'c0000000-0000-4000-8000-000000000011', '1 bar', 60);
+       ('c0000000-0000-4000-8000-000000000012', 'c0000000-0000-4000-8000-000000000011', '1 bar', 60),
+       ('c0000000-0000-4000-8000-000000000022', 'c0000000-0000-4000-8000-000000000021', '1 bowl', 350);
 
 insert into nutrition.food_prices (id, member_id, food_id, package_amount, package_unit, price_minor, currency, effective_date)
 values ('d0000000-0000-4000-8000-000000000001', tests.actor('owner'), 'c0000000-0000-4000-8000-000000000001',
@@ -106,6 +107,14 @@ select throws_ok(
     values (gen_random_uuid(), '2026-10-15', 'dinner', 'c0000000-0000-4000-8000-000000000011', 1, 'serving', 'Bar', 1, 'no_price')$$,
   '42501', null, 'An entry by the serving names its serving');
 select throws_ok(
+  $$insert into nutrition.diary_entries (id, diary_date, meal, serving_id, amount, unit, food_name, serving_count, cost_status)
+    values (gen_random_uuid(), '2026-10-15', 'dinner', 'c0000000-0000-4000-8000-000000000022', 1, 'serving', 'Stew', 1, 'no_price')$$,
+  '42501', null, 'The owner can''t name another member''s serving without a food');
+select throws_ok(
+  $$update nutrition.diary_entries set food_id = null, serving_id = 'c0000000-0000-4000-8000-000000000022'
+    where id = 'e0000000-0000-4000-8000-000000000002'$$,
+  '42501', null, 'The owner can''t edit an entry to name another member''s serving without a food');
+select throws_ok(
   $$insert into nutrition.diary_entries (id, diary_date, meal, amount, unit, food_name, cost_status, cost_minor, currency)
     values (gen_random_uuid(), '2026-10-15', 'dinner', 1, 'g', 'x', 'no_price', 10, 'USD')$$,
   '23514', null, 'Only a priced entry has a cost');
@@ -160,11 +169,14 @@ select throws_ok(
 -- Grantee out of scope, revoked grantee and admin: nothing.
 select tests.act_as('grantee_out_of_scope');
 select is((select count(*) from nutrition.diary_entries), 0::bigint, 'A grantee without the nutrition scope reads no diary');
+select is((select count(*) from nutrition.food_prices), 0::bigint, 'A grantee out of scope reads no prices');
 select is((select count(*) from nutrition.diary_days), 0::bigint, 'A grantee without the nutrition scope reads no days');
 select is(tests.rows($$update nutrition.diary_entries set amount = 1$$), 0::bigint, 'A grantee out of scope can''t edit');
 
 select tests.act_as('revoked_grantee');
 select is((select count(*) from nutrition.diary_entries), 0::bigint, 'A revoked grantee reads no diary');
+select is((select count(*) from nutrition.food_prices), 0::bigint, 'A revoked grantee reads no prices');
+select is(tests.rows($$update nutrition.food_prices set price_minor = 1$$), 0::bigint, 'A revoked grantee can''t edit prices');
 select is((select count(*) from nutrition.diary_days), 0::bigint, 'A revoked grantee reads no days');
 select is(tests.rows($$update nutrition.diary_entries set amount = 1$$), 0::bigint, 'A revoked grantee can''t edit');
 

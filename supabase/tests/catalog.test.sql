@@ -4,7 +4,7 @@
 begin;
 \ir helpers/actors.psql
 
-select plan(40);
+select plan(44);
 
 select tests.grant_scope('nutrition');
 select tests.act_as_postgres();
@@ -85,6 +85,8 @@ select is((select count(*) from catalog.foods where id = 'c0000000-0000-4000-800
 
 -- Grantees: custom foods are their owner's alone, whatever the grant (BRD §3.2).
 select tests.act_as('grantee_in_scope');
+select set_eq('select id::text from catalog.food_servings', $$values ('c0000000-0000-4000-8000-000000000002')$$,
+  'A grantee in scope reads the shared serving, not the member''s custom servings');
 select is((select count(*) from catalog.foods where owner_id is not null), 0::bigint,
   'A grantee in scope can''t read the member''s custom foods');
 select is(tests.rows($$update catalog.foods set name = 'x' where id = 'c0000000-0000-4000-8000-000000000011'$$),
@@ -92,18 +94,24 @@ select is(tests.rows($$update catalog.foods set name = 'x' where id = 'c0000000-
 select is((select count(*) from catalog.foods where owner_id is null), 1::bigint, 'A grantee reads the shared food');
 
 select tests.act_as('grantee_out_of_scope');
+select set_eq('select id::text from catalog.food_servings', $$values ('c0000000-0000-4000-8000-000000000002')$$,
+  'A grantee out of scope reads the shared serving, not the member''s custom servings');
 select is((select count(*) from catalog.foods where owner_id is not null), 0::bigint,
   'A grantee out of scope can''t read custom foods');
 select is(tests.rows($$delete from catalog.foods where id = 'c0000000-0000-4000-8000-000000000011'$$),
   0::bigint, 'A grantee out of scope can''t delete one');
 
 select tests.act_as('revoked_grantee');
+select set_eq('select id::text from catalog.food_servings', $$values ('c0000000-0000-4000-8000-000000000002')$$,
+  'A revoked grantee reads the shared serving, not the member''s custom servings');
 select is((select count(*) from catalog.foods where owner_id is not null), 0::bigint,
   'A revoked grantee can''t read custom foods');
 select is(tests.rows($$update catalog.food_servings set grams = 1$$), 0::bigint, 'A revoked grantee can''t edit servings');
 
 -- Admin: curation of shared rows arrives with the admin tooling; in R1 the admin is read-only like everyone else.
 select tests.act_as('admin');
+select set_eq('select id::text from catalog.food_servings', $$values ('c0000000-0000-4000-8000-000000000002')$$,
+  'The admin reads the shared serving, not the member''s custom servings');
 select is((select count(*) from catalog.foods where owner_id is not null), 0::bigint, 'The admin can''t read custom foods');
 select is(tests.rows($$update catalog.foods set name = 'x'$$), 0::bigint, 'The admin can''t edit any food');
 select throws_ok(
