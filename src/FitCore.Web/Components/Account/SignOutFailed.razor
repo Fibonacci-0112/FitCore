@@ -3,12 +3,12 @@
 
 @* Sign-out keeps the session when Supabase can't revoke it, so a copied cookie can't outlive the member's sign-out (NFR-SEC-4). *@
 
-<PageTitle>Couldn't sign out · FitCore</PageTitle>
+<PageTitle>@TextFormat.PageTitle(AccountStrings.SignOutFailedTitle)</PageTitle>
 
-<h1>You're still signed in</h1>
-<p>FitCore couldn't reach its sign-in service to end your session. Try again in a moment.</p>
+<h1>@AccountStrings.SignOutFailedHeading</h1>
+<p>@AccountStrings.SignOutFailedBody</p>
 
 <form method="post" action="account/sign-out" data-enhance="false">
     <AntiforgeryToken />
-    <button type="submit">Sign out</button>
+    <button type="submit">@AccountStrings.SignOutButton</button>
 </form>

@@ -1,19 +1,19 @@
 @inherits LayoutComponentBase
 
 <header>
-    <nav aria-label="Account">
-        <a href="">FitCore</a>
+    <nav aria-label="@AccountStrings.AccountNavLabel">
+        <a href="">@ShellStrings.AppName</a>
         <AuthorizeView>
             <Authorized>
                 @* A plain form: sign-out is a full page load that clears what the browser cached (ADR 0005 decision 7). *@
                 <form method="post" action="account/sign-out" data-enhance="false">
                     <AntiforgeryToken />
-                    <button type="submit">Sign out</button>
+                    <button type="submit">@AccountStrings.SignOutButton</button>
                 </form>
             </Authorized>
             <NotAuthorized>
-                <a href="account/sign-in" data-enhance-nav="false">Sign in</a>
-                <a href="account/sign-up" data-enhance-nav="false">Create account</a>
+                <a href="account/sign-in" data-enhance-nav="false">@AccountStrings.SignInLink</a>
+                <a href="account/sign-up" data-enhance-nav="false">@AccountStrings.CreateAccountNav</a>
             </NotAuthorized>
         </AuthorizeView>
     </nav>

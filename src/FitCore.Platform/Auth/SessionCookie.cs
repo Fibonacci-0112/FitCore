@@ -29,6 +29,9 @@ internal sealed class SessionCookie
         _time = time;
     }
 
+    /// <summary>Whether the request brought a session cookie at all, whether or not it decrypts.</summary>
+    public static bool IsPresent(HttpContext context) => !string.IsNullOrEmpty(Chunks.GetRequestCookie(context, Name));
+
     /// <summary>The session in the request's cookie, or null if there is none or it doesn't decrypt.</summary>
     public AuthSession? Read(HttpContext context)
     {

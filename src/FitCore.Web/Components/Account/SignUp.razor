@@ -6,9 +6,9 @@
 @inject NavigationManager Navigation
 @inject TimeProvider Time
 
-<PageTitle>Create your account · FitCore</PageTitle>
+<PageTitle>@TextFormat.PageTitle(AccountStrings.SignUpHeading)</PageTitle>
 
-<h1>Create your account</h1>
+<h1>@AccountStrings.SignUpHeading</h1>
 
 @if (error is not null)
 {
@@ -20,29 +20,29 @@
     <ValidationSummary />
 
     <p>
-        <label for="display-name">Name</label>
+        <label for="display-name">@AccountStrings.NameLabel</label>
         <InputText id="display-name" @bind-Value="Input!.DisplayName" autocomplete="name" />
     </p>
     <p>
-        <label for="email">Email</label>
+        <label for="email">@AccountStrings.EmailLabel</label>
         <InputText id="email" @bind-Value="Input!.Email" type="email" autocomplete="email" />
     </p>
     <p>
-        <label for="password">Password</label>
+        <label for="password">@AccountStrings.PasswordLabel</label>
         <InputText id="password" @bind-Value="Input!.Password" type="password" autocomplete="new-password" aria-describedby="password-help" />
-        <small id="password-help">At least 15 characters. A few unrelated words work well.</small>
+        <small id="password-help">@AccountStrings.NewPasswordHelp</small>
     </p>
     <p>
-        <label for="birth-date">Date of birth</label>
+        <label for="birth-date">@AccountStrings.BirthDateLabel</label>
         <InputDate id="birth-date" @bind-Value="Input!.BirthDate" autocomplete="bday" aria-describedby="birth-date-help" />
-        <small id="birth-date-help">FitCore is for adults 18 and over.</small>
+        <small id="birth-date-help">@AccountStrings.BirthDateHelp</small>
     </p>
     <InputText @bind-Value="Input!.TimeZone" type="hidden" data-time-zone />
 
-    <button type="submit">Create account</button>
+    <button type="submit">@AccountStrings.CreateAccountButton</button>
 </EditForm>
 
-<p>Already have an account? <a href="account/sign-in">Sign in</a></p>
+<p><LinkedText Format="@AccountStrings.HaveAccount" Href="account/sign-in" Text="@AccountStrings.SignInLink" /></p>
 
 @code {
     [CascadingParameter]
@@ -64,7 +64,7 @@
         // Checked here for a clear message; the database refuses an under-18 birth date whatever the caller.
         if (!LocalCalendar.IsOldEnough(birthDate, LocalCalendar.DateAt(Time.GetUtcNow(), zone)))
         {
-            error = AccountText.TooYoung;
+            error = AccountStrings.TooYoung;
             return;
         }
 
@@ -92,21 +92,21 @@
 
     private sealed class SignUpInput
     {
-        [Required(ErrorMessage = "Enter your name.")]
-        [StringLength(80, ErrorMessage = "Use 80 characters or fewer for your name.")]
+        [Required(ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.NameRequired))]
+        [StringLength(80, ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.NameTooLong))]
         public string? DisplayName { get; set; }
 
-        [Required(ErrorMessage = "Enter your email address.")]
-        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
-        [StringLength(254)]
+        [Required(ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.EmailRequired))]
+        [EmailAddress(ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.EmailInvalid))]
+        [StringLength(254, ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.EmailTooLong))]
         public string? Email { get; set; }
 
         // NFR-SEC-2: at least 15 characters as the only factor, up to 64 allowed, no composition rules.
-        [Required(ErrorMessage = "Choose a password.")]
-        [StringLength(64, MinimumLength = 15, ErrorMessage = "Use 15 to 64 characters for your password.")]
+        [Required(ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.NewPasswordRequired))]
+        [StringLength(64, MinimumLength = 15, ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.NewPasswordLength))]
         public string? Password { get; set; }
 
-        [Required(ErrorMessage = "Enter your date of birth.")]
+        [Required(ErrorMessageResourceType = typeof(AccountStrings), ErrorMessageResourceName = nameof(AccountStrings.BirthDateRequired))]
         public DateOnly? BirthDate { get; set; }
 
         public string? TimeZone { get; set; }

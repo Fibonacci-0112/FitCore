@@ -114,7 +114,7 @@ Don't report a finding you can't tie to a concrete failure or a written rule. Do
 - **Serialization** uses source-generated JSON (`JsonSerializerContext`). No AOT, `InvariantGlobalization` or `wasm-tools` without a measurement that justifies it. CommunityToolkit.Mvvm is 8.4.2 or later.
 - **On-device health data** is stored in Keychain, Keystore, DPAPI or an encrypted database (NFR-SEC-8).
 - **Accessibility.** Every control has an accessible name; touch targets are ≥ 44×44 pt; color is never the only signal, for example for incomplete or unpriced items; motion respects "reduce motion" (NFR-ACC-1..6).
-- **Strings** are in resource files, not hard-coded (NFR-L10N-2). Numbers, dates and currency use the member's locale and units.
+- **Strings** are in resource files, not hard-coded (NFR-L10N-2): text both UIs show in `FitCore.Client.Core/Resources`, server-only text in its project's `Resources/`. Validation attributes use `ErrorMessageResourceType`; a sentence with a link is one resource with `{0}`, shown with `LinkedText`, never split into fragments. `UserVisibleTextTests` catches Razor text and literal `ErrorMessage`s, but not strings a C# method returns. Numbers, dates and currency use the member's locale and units.
 
 ### 4.7 Domain library and tests
 

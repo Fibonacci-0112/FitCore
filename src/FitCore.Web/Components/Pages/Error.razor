@@ -1,7 +1,7 @@
 @page "/Error"
 @attribute [ExcludeFromInteractiveRouting]
 
-<PageTitle>Error</PageTitle>
+<PageTitle>@TextFormat.PageTitle(ShellStrings.ErrorHeading)</PageTitle>
 
-<h1>Something went wrong</h1>
-<p>Please try again. If it keeps happening, contact support.</p>
+<h1>@ShellStrings.ErrorHeading</h1>
+<p>@ShellStrings.ErrorBody</p>

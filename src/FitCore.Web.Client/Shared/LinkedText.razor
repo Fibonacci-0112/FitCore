@@ -1,0 +1,31 @@
+@* A sentence from a resource with one link in it. Format marks the link's place with {0}, so a translation can move
+   it, and the sentence is never split into fragments a translator can't reorder (NFR-L10N-2). *@
+
+@before<a href="@Href" @attributes="Attributes">@Text</a>@after
+
+@code {
+    private string before = "";
+    private string after = "";
+
+    /// <summary>The sentence, with <c>{0}</c> where the link goes.</summary>
+    [Parameter, EditorRequired]
+    public string Format { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public string Href { get; set; } = "";
+
+    /// <summary>The link's own text.</summary>
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = "";
+
+    /// <summary>Anything else for the link, such as <c>data-enhance-nav</c>.</summary>
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? Attributes { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        // A translation that lost the placeholder still shows the whole sentence, with the link after it.
+        var at = Format.IndexOf("{0}", StringComparison.Ordinal);
+        (before, after) = at < 0 ? (Format + " ", "") : (Format[..at], Format[(at + 3)..]);
+    }
+}
