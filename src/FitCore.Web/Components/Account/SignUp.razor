@@ -1,0 +1,114 @@
+@page "/account/sign-up"
+@attribute [ExcludeFromInteractiveRouting]
+@using FitCore.Domain.Calendar
+@inject MemberAuth Auth
+@inject MemberSessions Sessions
+@inject NavigationManager Navigation
+@inject TimeProvider Time
+
+<PageTitle>Create your account · FitCore</PageTitle>
+
+<h1>Create your account</h1>
+
+@if (error is not null)
+{
+    <p role="alert">@error</p>
+}
+
+<EditForm Model="Input!" FormName="sign-up" OnValidSubmit="SignUpAsync" method="post">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <p>
+        <label for="display-name">Name</label>
+        <InputText id="display-name" @bind-Value="Input!.DisplayName" autocomplete="name" />
+    </p>
+    <p>
+        <label for="email">Email</label>
+        <InputText id="email" @bind-Value="Input!.Email" type="email" autocomplete="email" />
+    </p>
+    <p>
+        <label for="password">Password</label>
+        <InputText id="password" @bind-Value="Input!.Password" type="password" autocomplete="new-password" aria-describedby="password-help" />
+        <small id="password-help">At least 15 characters. A few unrelated words work well.</small>
+    </p>
+    <p>
+        <label for="birth-date">Date of birth</label>
+        <InputDate id="birth-date" @bind-Value="Input!.BirthDate" autocomplete="bday" aria-describedby="birth-date-help" />
+        <small id="birth-date-help">FitCore is for adults 18 and over.</small>
+    </p>
+    <InputText @bind-Value="Input!.TimeZone" type="hidden" data-time-zone />
+
+    <button type="submit">Create account</button>
+</EditForm>
+
+<p>Already have an account? <a href="account/sign-in">Sign in</a></p>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private SignUpInput? Input { get; set; }
+
+    private string? error;
+
+    protected override void OnInitialized() => Input ??= new();
+
+    private async Task SignUpAsync()
+    {
+        // The browser's time zone, if it sent a real one; the member can change it later.
+        var zone = TimeZoneInfo.TryFindSystemTimeZoneById(Input!.TimeZone ?? "", out var found) ? found : TimeZoneInfo.Utc;
+        var birthDate = Input.BirthDate!.Value;
+
+        // Checked here for a clear message; the database refuses an under-18 birth date whatever the caller.
+        if (!LocalCalendar.IsOldEnough(birthDate, LocalCalendar.DateAt(Time.GetUtcNow(), zone)))
+        {
+            error = AccountText.TooYoung;
+            return;
+        }
+
+        var outcome = await Auth.SignUpAsync(
+            Input.Email!.Trim(),
+            Input.Password!,
+            new SignUpProfile(Input.DisplayName!.Trim(), birthDate, zone.Id),
+            HttpContext.Connection.RemoteIpAddress,
+            HttpContext.RequestAborted);
+
+        switch (outcome.Status)
+        {
+            case AuthStatus.SignedIn:
+                Sessions.Start(HttpContext, outcome.Session!);
+                Navigation.NavigateTo("/", forceLoad: true);
+                break;
+            case AuthStatus.ConfirmationSent:
+                Navigation.NavigateTo("account/check-email", forceLoad: true);
+                break;
+            default:
+                error = AccountText.For(outcome.Status);
+                break;
+        }
+    }
+
+    private sealed class SignUpInput
+    {
+        [Required(ErrorMessage = "Enter your name.")]
+        [StringLength(80, ErrorMessage = "Use 80 characters or fewer for your name.")]
+        public string? DisplayName { get; set; }
+
+        [Required(ErrorMessage = "Enter your email address.")]
+        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
+        [StringLength(254)]
+        public string? Email { get; set; }
+
+        // NFR-SEC-2: at least 15 characters as the only factor, up to 64 allowed, no composition rules.
+        [Required(ErrorMessage = "Choose a password.")]
+        [StringLength(64, MinimumLength = 15, ErrorMessage = "Use 15 to 64 characters for your password.")]
+        public string? Password { get; set; }
+
+        [Required(ErrorMessage = "Enter your date of birth.")]
+        public DateOnly? BirthDate { get; set; }
+
+        public string? TimeZone { get; set; }
+    }
+}

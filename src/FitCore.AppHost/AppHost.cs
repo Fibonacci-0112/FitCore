@@ -11,8 +11,15 @@ var supabase = builder.AddExecutable("supabase", "npx", root, "--yes", "supabase
 // project's: those come from the secret store (NFR-SEC-5).
 const string database = "Host=127.0.0.1;Port=54322;Database=postgres;Username=fitcore_api;Password=fitcore-local-only";
 
+// The local stack's Auth. Its secret key is a parameter, from user secrets or the dashboard's prompt, never a committed
+// file (NFR-SEC-5): `npx supabase status` prints it. Hosted keys come from the secret store.
+const string supabaseUrl = "http://127.0.0.1:54321";
+var supabaseSecretKey = builder.AddParameter("supabase-secret-key", secret: true);
+
 builder.AddProject<Projects.FitCore_Web>("fitcore-app")
     .WithEnvironment("ConnectionStrings__Fitcore", database)
+    .WithEnvironment("Supabase__Url", supabaseUrl)
+    .WithEnvironment("Supabase__SecretKey", supabaseSecretKey)
     .WaitForCompletion(supabase);
 
 builder.AddProject<Projects.FitCore_Worker>("fitcore-worker")

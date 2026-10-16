@@ -4,6 +4,8 @@
 
   <PropertyGroup>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <!-- Locally, Supabase:SecretKey comes from user secrets or the environment, never a committed file (NFR-SEC-5). -->
+    <UserSecretsId>fitcore-web</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

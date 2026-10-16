@@ -9,6 +9,7 @@
 | `config.toml` | The local stack. The Data API exposes only `public` and `graphql_public`; module schemas are never added (architecture-options §B.3) |
 | `migrations/` | Forward-only SQL migrations, expand-then-contract (NFR-OPS-6). Each one enables RLS on every table it creates and ships with pgTAP tests (NFR-MNT-2) |
 | `seed.sql` | Local stack only: the local-only passwords for `fitcore_api` and `fitcore_catalog_import` |
+| `templates/` | Supabase Auth's email templates. The confirmation link opens fitcore-app's confirm page with a token hash. Hosted projects use the same files, pasted into the dashboard |
 | `tests/*.test.sql` | The pgTAP suite, run by `supabase test db` |
 | `tests/helpers/actors.psql` | The six actors of NFR-PRV-2 and their grants, included by table tests with `\ir helpers/actors.psql` |
 
@@ -53,13 +54,13 @@ Every private table has a test file that includes the helper and checks each of 
 Needs Docker and Node 22. Run from the repository root:
 
 ```sh
-npx --yes supabase@2.121.0 db start    # Postgres only, with migrations and seed applied; `start` runs the whole stack
+npx --yes supabase@2.121.0 start       # the stack, with migrations and seed applied; `db start` runs Postgres only
 npx --yes supabase@2.121.0 test db     # the pgTAP suite
 npx --yes supabase@2.121.0 db reset    # reapply migrations and seed after changing them
 npx --yes supabase@2.121.0 stop
 ```
 
-The local database listens on `127.0.0.1:54322`. The .NET database tests (`tests/FitCore.Platform.Tests` and the module test projects, through the shared fixture in `tests/FitCore.Testing`) and the Aspire AppHost use it.
+The local database listens on `127.0.0.1:54322`, Auth on `http://127.0.0.1:54321` and the mail catcher on `http://127.0.0.1:54324`. Confirmation emails land in the mail catcher. fitcore-app needs the stack's secret key, which `npx supabase status` prints: set it as the `Supabase__SecretKey` environment variable, or with `dotnet user-secrets set Supabase:SecretKey <key> --project src/FitCore.Web` (and `Parameters:supabase-secret-key` for the AppHost). It's never committed, even the local one (NFR-SEC-5). The .NET database tests (`tests/FitCore.Platform.Tests` and the module test projects, through the shared fixture in `tests/FitCore.Testing`) and the Aspire AppHost use it.
 
 ## Hosted projects
 
@@ -69,6 +70,7 @@ The development project is `FitCore-Dev-DB` (implementation plan §2). For each 
 2. Set the `fitcore_api` and `fitcore_catalog_import` passwords from the SQL editor, each with its own generated value: `alter role fitcore_api with password '…';` and `alter role fitcore_catalog_import with password '…';`. Store them in the secret store (NFR-SEC-5), never in the repository.
 3. Connect the API through Supavisor session mode (port 5432 on the pooler host, user `fitcore_api.<ref>`) or directly. `FitCore.Platform` refuses transaction mode (port 6543) and `No Reset On Close` ([RLS spike §4](../docs/spikes/rls-connection-pooling.md#4-rules-for-the-api) rule 5).
 4. Keep the Data API's exposed schemas to `public` and `graphql_public`, and keep "Enable automatic RLS" off ([implementation plan §3.1](../docs/implementation-plan.md#31-database)).
+5. Give fitcore-app the project URL and a secret API key as `Supabase:Url` and `Supabase:SecretKey`, from the secret store, and apply the [Auth settings](#auth-settings) below.
 
 ## Auth settings
 
@@ -86,7 +88,7 @@ Decided on 2026-10-16 (implementation plan §8). Set them in each hosted project
 | Required characters | None | NFR-SEC-2 forbids composition rules |
 | Leaked-password protection | On | NFR-SEC-2's breached-password check (Pro; the local stack has no equivalent) |
 | MFA | TOTP on, phone off | NFR-SEC-3 and the [auth spike rules](../docs/spikes/apple-sign-in-and-mfa.md#4-rules-for-the-build) |
-| Confirm email | On | Proves the member owns the address |
+| Confirm email | On, with the confirmation template from `templates/confirmation.html` and the site URL set to fitcore-app's address | Proves the member owns the address. The link opens fitcore-app's confirm page, which verifies the token hash on the server |
 | Secure email change | On | Confirms both the old and the new address |
 | Custom SMTP | Amazon SES in `us-west-2` | The built-in mailer sends only to team members, 2 emails per hour. Locally the stack's mail catcher receives all email |
 | Email rate limit | 300 per hour | The default with custom SMTP is 30 per hour |

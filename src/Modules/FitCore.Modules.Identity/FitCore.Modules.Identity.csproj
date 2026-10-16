@@ -3,6 +3,7 @@
   <!-- Profile, age gate, roles and consents (NFR-PRV-7). -->
 
   <ItemGroup>
+    <ProjectReference Include="..\..\FitCore.Contracts\FitCore.Contracts.csproj" />
     <ProjectReference Include="..\..\FitCore.Domain\FitCore.Domain.csproj" />
     <ProjectReference Include="..\..\FitCore.Platform\FitCore.Platform.csproj" />
   </ItemGroup>

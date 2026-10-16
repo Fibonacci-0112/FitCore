@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Sign-up, the 18+ gate, sign-in and sign-out through fitcore-app against the local Supabase stack: Auth, Mailpit and the database (implementation plan PR 4). -->
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FitCore.Web\FitCore.Web.csproj" />
+    <ProjectReference Include="..\FitCore.Testing\FitCore.Testing.csproj" />
+  </ItemGroup>
+
+</Project>

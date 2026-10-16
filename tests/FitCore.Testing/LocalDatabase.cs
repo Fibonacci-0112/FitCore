@@ -84,6 +84,20 @@ public sealed class LocalDatabase : IAsyncLifetime
         return await command.ExecuteNonQueryAsync();
     }
 
+    /// <summary>Runs a query as <c>postgres</c>, outside row-level security, and returns the first column of the first row.</summary>
+    public async Task<T> ScalarAsync<T>(string sql, params object[] parameters)
+    {
+        await using var connection = new NpgsqlConnection(AdminConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(sql, connection);
+        foreach (var parameter in parameters)
+        {
+            command.Parameters.Add(new NpgsqlParameter { Value = parameter });
+        }
+
+        return (T)(await command.ExecuteScalarAsync())!;
+    }
+
     /// <summary>Adds a user to <c>auth.users</c> and returns the identity a unit of work runs as.</summary>
     public async Task<DbIdentity> CreateMemberAsync(string assuranceLevel = "aal1")
     {
