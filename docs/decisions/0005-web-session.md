@@ -1,6 +1,6 @@
 # 0005: Hold the web session in an encrypted server cookie, with a same-origin API
 
-- **Status:** Proposed. Needs the product owner's approval before PR 4 builds on it.
+- **Status:** Accepted. Approved by the product owner on 2026-10-16.
 - **Date:** 2026-10-16
 - **Deciders:** Product owner
 - **Related:** [ADR 0003](0003-modular-monolith.md), [implementation plan §3.3](../implementation-plan.md#33-authentication) and [PR 4](../implementation-plan.md#pr-4-sign-in-profile-and-app-shells), the [Blazor spike's open points](../spikes/blazor-prerendering-web-vitals.md#6-open-points) and the [auth spike's rules](../spikes/apple-sign-in-and-mfa.md#4-rules-for-the-build).
@@ -78,4 +78,4 @@ The web app uses a **server-side session**: `fitcore-app` signs the member in wi
 ## Follow-up
 
 1. PR 4 builds this in `FitCore.Platform` and `FitCore.Web`, with tests for: a forged or expired cookie refused, refresh on expiry, a cross-site write refused without the antiforgery token or with a foreign origin, a bearer request accepted without antiforgery, sign-out revoking the refresh token, and no token in the prerendered HTML or the persisted state.
-2. Add the cookie and cross-site rules to the [code-review skill](../../.github/skills/code-review/SKILL.md) and to `CLAUDE.md` once this ADR is accepted.
+2. Add the cookie and cross-site rules to the [code-review skill](../../.github/skills/code-review/SKILL.md) and to `CLAUDE.md`. Done with the acceptance.
