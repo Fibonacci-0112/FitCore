@@ -26,7 +26,7 @@ This plan turns the requirements and the accepted architecture into a build orde
 - **Done:** ADR 0003; the RLS and Blazor spikes; the render-mode comparison; the solution scaffold (`FitCore.slnx`, 12 empty modules, both hosts, architecture tests and pipeline tests in CI).
 - **Partly done:** the auth spike. The on-device Sign in with Apple test is still to run ([auth spike §5](spikes/apple-sign-in-and-mfa.md#5-device-test-plan-for-sign-in-with-apple)).
 - **Not started:** the cost model (ADR 0003 follow-up 4). Still missing from the scaffold (follow-up 5): `FitCore.Maui`, the module test projects other than Nutrition's, and `FitCore.Load.Tests`.
-- **R1 progress:** [PR 1](#pr-1-domain-library), the domain library with `FitCore.Domain.Tests` and its coverage gate, and [PR 2](#pr-2-database-foundation), the database foundation, are done. [PR 3](#pr-3-r1-schema-and-rls), the R1 schema and RLS, is in review.
+- **R1 progress:** [PR 1](#pr-1-domain-library), the domain library with `FitCore.Domain.Tests` and its coverage gate, [PR 2](#pr-2-database-foundation), the database foundation, and [PR 3](#pr-3-r1-schema-and-rls), the R1 schema and RLS, are done. [PR 4](#pr-4-sign-in-profile-and-app-shells) is next; its web session design is proposed in [ADR 0005](decisions/0005-web-session.md).
 - **Environments:** the first hosted Supabase project exists: `FitCore-Dev-DB` in the `Fibonacci-0112` organization (`https://apauhqfldklnmqthubno.supabase.co`, Postgres 17, `us-west-2`). It is the shared development and staging database for R1. Production is a separate project, created in [PR 9](#pr-9-beta-environments-and-release).
 
 ## 3. Foundations
@@ -55,7 +55,7 @@ Every feature PR builds on these. Each is introduced by the first PR that needs 
 ### 3.3 Authentication
 
 - The API validates Supabase JWTs against the project's signing keys. Clinician and admin endpoints require `aal2` (NFR-SEC-3; [auth spike §4](spikes/apple-sign-in-and-mfa.md#4-rules-for-the-build)).
-- **Web:** a server-side session. The Supabase session is held in an HttpOnly, Secure, SameSite cookie, and the browser calls the same-origin `/v1` API. Every cookie-authenticated `/v1` endpoint that changes state requires antiforgery validation, or an equivalent Origin and CSRF-token check. Tokens never reach WebAssembly or local storage. This needs [ADR 0005](#8-decisions-still-needed).
+- **Web:** a server-side session. The Supabase session is held in an HttpOnly, Secure, SameSite cookie, and the browser calls the same-origin `/v1` API. Every cookie-authenticated `/v1` endpoint that changes state requires antiforgery validation, or an equivalent Origin and CSRF-token check. Tokens never reach WebAssembly or local storage. The details are in [ADR 0005](decisions/0005-web-session.md) (proposed).
 - **MAUI:** `Supabase.Gotrue` behind a thin wrapper, with tokens in the platform secure store (NFR-SEC-8). On iOS, Sign in with Apple uses the native provider with a hashed nonce.
 - Sign-in methods for R1: email and password, Google, Microsoft and Apple ([BRD §4.2](BRD.md#42-feature-list)). Passwords follow NFR-SEC-2; sign-in rate limits and lockout follow NFR-SEC-4.
 
@@ -244,7 +244,7 @@ Each phase starts with its prerequisites and ends when its NFRs are met. Each ge
 | Decision | Needed by | Notes |
 |---|---|---|
 | ADR 0004: hosting region and infrastructure-as-code tool | PR 9 | The region is `us-west-2`, fixed by the Supabase project ([§B.6](architecture-options.md#b6-deployment-model)). The tool is open |
-| ADR 0005: web session design | PR 4 | Cookie-held Supabase session with a same-origin API, as in [section 3.3](#33-authentication) |
+| ADR 0005: web session design | PR 4 | Drafted: [ADR 0005](decisions/0005-web-session.md), proposed and awaiting the product owner's approval. It also asks the product owner to set the access-token lifetime and the session time box or inactivity timeout with the auth settings |
 | Secret store | PR 9 | AWS Secrets Manager or SSM Parameter Store |
 | Error-tracking and transactional-email vendors | PR 4 (email), PR 9 (errors) | Both must meet NFR-PRV-6 scrubbing |
 | Supabase plan, connection mode and auth settings | PR 9 (plan, connection mode), PR 4 (auth settings) | Pro is needed for PITR. Confirm MFA and leaked-password protection on the plan. Choose Supavisor session mode or the IPv4 add-on. PR 2's unit of work accepts either and refuses transaction mode, and development uses session mode, which works over IPv4 ([`supabase/README.md`](../supabase/README.md#hosted-projects)) |
