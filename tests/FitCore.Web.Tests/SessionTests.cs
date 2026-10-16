@@ -138,6 +138,7 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
     }
 
     [Theory]
+    [InlineData(FakeSupabase.RefreshAnswer.KeyRejected)]
     [InlineData(FakeSupabase.RefreshAnswer.ServerError)]
     [InlineData(FakeSupabase.RefreshAnswer.Unreachable)]
     public async Task An_outage_with_an_expired_token_answers_503_and_keeps_the_cookie(FakeSupabase.RefreshAnswer answer)

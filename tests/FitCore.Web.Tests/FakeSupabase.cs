@@ -27,6 +27,7 @@ public sealed class FakeSupabase : HttpMessageHandler
     {
         NewSession,
         Refused,
+        KeyRejected,
         ServerError,
         Unreachable,
     }
@@ -92,6 +93,7 @@ public sealed class FakeSupabase : HttpMessageHandler
             {
                 RefreshAnswer.NewSession => Json(HttpStatusCode.OK, NewSession()),
                 RefreshAnswer.Refused => Json(HttpStatusCode.BadRequest, new JsonObject { ["error_code"] = "refresh_token_not_found" }),
+                RefreshAnswer.KeyRejected => Json(HttpStatusCode.Unauthorized, new JsonObject { ["message"] = "Invalid API key" }),
                 RefreshAnswer.ServerError => Json(HttpStatusCode.BadGateway, new JsonObject()),
                 _ => throw new HttpRequestException("Supabase Auth is unreachable."),
             },

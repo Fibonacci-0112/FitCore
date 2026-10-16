@@ -132,8 +132,12 @@ public sealed class MemberAuth
 
         if (path.StartsWith("token?grant_type=refresh_token", StringComparison.Ordinal))
         {
-            // Any client error on refresh means this refresh token will never work again.
-            return new(AuthStatus.SessionEnded);
+            // Only Supabase saying the token or session is gone ends the session (ADR 0005 decision 4). Anything else,
+            // such as a rejected API key, is fitcore-app's problem, and signing every member out wouldn't fix it.
+            return errorCode is "refresh_token_not_found" or "refresh_token_already_used" or "session_not_found"
+                or "session_expired" or "user_not_found" or "user_banned"
+                ? new(AuthStatus.SessionEnded)
+                : new(AuthStatus.Unavailable);
         }
 
         return errorCode switch
