@@ -69,3 +69,26 @@ The development project is `FitCore-Dev-DB` (implementation plan §2). For each 
 2. Set the `fitcore_api` and `fitcore_catalog_import` passwords from the SQL editor, each with its own generated value: `alter role fitcore_api with password '…';` and `alter role fitcore_catalog_import with password '…';`. Store them in the secret store (NFR-SEC-5), never in the repository.
 3. Connect the API through Supavisor session mode (port 5432 on the pooler host, user `fitcore_api.<ref>`) or directly. `FitCore.Platform` refuses transaction mode (port 6543) and `No Reset On Close` ([RLS spike §4](../docs/spikes/rls-connection-pooling.md#4-rules-for-the-api) rule 5).
 4. Keep the Data API's exposed schemas to `public` and `graphql_public`, and keep "Enable automatic RLS" off ([implementation plan §3.1](../docs/implementation-plan.md#31-database)).
+
+## Auth settings
+
+Decided on 2026-10-16 (implementation plan §8). Set them in each hosted project's Auth settings. PR 4 sets the same values in `config.toml` for the local stack, except where the table says otherwise.
+
+| Setting | Value | Why |
+|---|---|---|
+| Plan | Pro for production | Leaked-password protection, the session time-box and the inactivity timeout need it. The development project can stay on Free until the beta and go without those three |
+| Access-token (JWT) expiry | 900 seconds | Bounds how long a copied cookie works after sign-out ([ADR 0005](../docs/decisions/0005-web-session.md) risks); within NFR-SEC-4's 1 hour |
+| Refresh-token rotation | On, reuse interval 10 seconds | ADR 0005 decision 4 relies on it |
+| Session time-box | 30 days | Forces a fresh sign-in at least monthly (Pro) |
+| Inactivity timeout | 14 days | An abandoned device signs itself out (Pro) |
+| Single session per user | Off | Members use several devices |
+| Minimum password length | 15 | NFR-SEC-2's single-factor minimum. Supabase can't lower it for MFA users |
+| Required characters | None | NFR-SEC-2 forbids composition rules |
+| Leaked-password protection | On | NFR-SEC-2's breached-password check (Pro; the local stack has no equivalent) |
+| MFA | TOTP on, phone off | NFR-SEC-3 and the [auth spike rules](../docs/spikes/apple-sign-in-and-mfa.md#4-rules-for-the-build) |
+| Confirm email | On | Proves the member owns the address |
+| Secure email change | On | Confirms both the old and the new address |
+| Custom SMTP | Amazon SES in `us-west-2` | The built-in mailer sends only to team members, 2 emails per hour. Locally the stack's mail catcher receives all email |
+| Email rate limit | 300 per hour | The default with custom SMTP is 30 per hour |
+| IP address forwarding | On | Supabase rate-limits Auth per IP, and every web call comes from `fitcore-app` ([ADR 0005](../docs/decisions/0005-web-session.md) decision 2) |
+| Apple provider | Native client IDs plus a Services ID for the web flow | Every platform offers Sign in with Apple. The web flow's client secret expires every 6 months: renew it from the signing key before it lapses, or Apple sign-in stops on Android, Windows and the web |

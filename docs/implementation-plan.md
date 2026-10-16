@@ -57,7 +57,7 @@ Every feature PR builds on these. Each is introduced by the first PR that needs 
 - The API validates Supabase JWTs against the project's signing keys. Clinician and admin endpoints require `aal2` (NFR-SEC-3; [auth spike §4](spikes/apple-sign-in-and-mfa.md#4-rules-for-the-build)).
 - **Web:** a server-side session. The Supabase session is held in an HttpOnly, Secure, SameSite cookie, and the browser calls the same-origin `/v1` API. Every cookie-authenticated `/v1` endpoint that changes state requires both antiforgery validation and a same-origin `Origin` or `Sec-Fetch-Site` check. Tokens never reach WebAssembly or local storage. The details are in [ADR 0005](decisions/0005-web-session.md).
 - **MAUI:** `Supabase.Gotrue` behind a thin wrapper, with tokens in the platform secure store (NFR-SEC-8). On iOS, Sign in with Apple uses the native provider with a hashed nonce.
-- Sign-in methods for R1: email and password, Google, Microsoft and Apple ([BRD §4.2](BRD.md#42-feature-list)). Passwords follow NFR-SEC-2; sign-in rate limits and lockout follow NFR-SEC-4.
+- Sign-in methods for R1: email and password, Google, Microsoft and Apple ([BRD §4.2](BRD.md#42-feature-list)), every method on every platform. Apple uses the native flow on iOS and macOS and Apple's web flow elsewhere. Passwords follow NFR-SEC-2; sign-in rate limits and lockout follow NFR-SEC-4.
 
 ### 3.4 API conventions
 
@@ -246,9 +246,10 @@ Each phase starts with its prerequisites and ends when its NFRs are met. Each ge
 | ADR 0004: hosting region and infrastructure-as-code tool | PR 9 | The region is `us-west-2`, fixed by the Supabase project ([§B.6](architecture-options.md#b6-deployment-model)). The tool is open |
 | ADR 0005: web session design | PR 4 | Accepted on 2026-10-16: [ADR 0005](decisions/0005-web-session.md). The access-token lifetime and the session time box or inactivity timeout it asks for are set with the auth settings below |
 | Secret store | PR 9 | AWS Secrets Manager or SSM Parameter Store |
-| Error-tracking and transactional-email vendors | PR 4 (email), PR 9 (errors) | Both must meet NFR-PRV-6 scrubbing |
-| Supabase plan, connection mode and auth settings | PR 9 (plan, connection mode), PR 4 (auth settings) | Pro is needed for PITR. Confirm MFA and leaked-password protection on the plan. Choose Supavisor session mode or the IPv4 add-on. PR 2's unit of work accepts either and refuses transaction mode, and development uses session mode, which works over IPv4 ([`supabase/README.md`](../supabase/README.md#hosted-projects)) |
-| Sign in with Apple on Android, Windows and web | PR 4 | [Auth spike §6](spikes/apple-sign-in-and-mfa.md#6-open-points) |
+| Error-tracking vendor | PR 9 | Must meet NFR-PRV-6 scrubbing |
+| Transactional-email vendor | Decided 2026-10-16 | Amazon SES in `us-west-2`, as Supabase Auth's custom SMTP: the cheapest option, on the existing AWS account, and HIPAA-eligible under the AWS BAA for the Clinic phase (NFR-PRV-10). Open and click tracking stay off, and emails carry no health data (NFR-PRV-6). Request production access early, since new SES accounts start in a sandbox. Until then, development uses the local stack's mail catcher |
+| Supabase plan and connection mode | PR 9 | Pro for production: PITR, leaked-password protection and the session time-box and inactivity timeout all need it. The auth settings were decided on 2026-10-16 and are listed in [`supabase/README.md`](../supabase/README.md#auth-settings). Choose Supavisor session mode or the IPv4 add-on. PR 2's unit of work accepts either and refuses transaction mode, and development uses session mode, which works over IPv4 ([`supabase/README.md`](../supabase/README.md#hosted-projects)) |
+| Sign in with Apple on Android, Windows and web | Decided 2026-10-16 | Offered on every platform, so a member who signed up on iOS with Hide My Email can still sign in elsewhere. The web flow's client secret expires every 6 months and must be renewed from the signing key ([`supabase/README.md`](../supabase/README.md#auth-settings)) |
 | Open items carried over | Various | [NFR §17](NFR.md#17-open-items) items 1–5 and [BRD §10](BRD.md#10-open-questions-and-decisions-needed) |
 
 ## 9. Inputs from the product owner
