@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The device apps' shared code: the sign-up view model, and the Supabase.Gotrue wrapper against the local Supabase stack's Auth, Mailpit and database (implementation plan PR 4). -->
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FitCore.Client.Auth\FitCore.Client.Auth.csproj" />
+    <ProjectReference Include="..\..\src\FitCore.Client.Core\FitCore.Client.Core.csproj" />
+    <ProjectReference Include="..\FitCore.Testing\FitCore.Testing.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Supabase Auth for the device apps: Supabase.Gotrue behind a thin wrapper (auth spike rule 5), called with the
+    project's publishable key. Only FitCore.Maui uses it; the web signs members in on the server and never ships it to
+    browsers (ADR 0005).
+  -->
+
+  <ItemGroup>
+    <PackageReference Include="Supabase.Gotrue" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FitCore.Client.Core\FitCore.Client.Core.csproj" />
+  </ItemGroup>
+
+</Project>
