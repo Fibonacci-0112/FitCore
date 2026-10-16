@@ -26,6 +26,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/FitCore.Architecture.Tests/FitCore.Architecture.Tests.csproj" />
     <Project Path="tests/FitCore.Domain.Tests/FitCore.Domain.Tests.csproj" />
+    <Project Path="tests/FitCore.Modules.Identity.Tests/FitCore.Modules.Identity.Tests.csproj" />
     <Project Path="tests/FitCore.Modules.Nutrition.Tests/FitCore.Modules.Nutrition.Tests.csproj" />
     <Project Path="tests/FitCore.Platform.Tests/FitCore.Platform.Tests.csproj" />
     <Project Path="tests/FitCore.Testing/FitCore.Testing.csproj" />

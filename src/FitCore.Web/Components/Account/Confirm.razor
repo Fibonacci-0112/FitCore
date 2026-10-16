@@ -1,0 +1,64 @@
+@page "/account/confirm"
+@attribute [ExcludeFromInteractiveRouting]
+@inject MemberAuth Auth
+@inject MemberSessions Sessions
+@inject NavigationManager Navigation
+
+@* Opening the link only shows this page; confirming takes a POST, so a link alone can't sign anyone in. *@
+
+<PageTitle>Confirm your email · FitCore</PageTitle>
+
+<h1>Confirm your email</h1>
+
+@if (error is not null)
+{
+    <p role="alert">@error</p>
+    <p><a href="account/sign-in">Sign in</a></p>
+}
+else
+{
+    <EditForm Model="Input!" FormName="confirm" OnValidSubmit="ConfirmAsync" method="post">
+        <InputText @bind-Value="Input!.TokenHash" type="hidden" />
+        <button type="submit">Confirm and sign in</button>
+    </EditForm>
+}
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private ConfirmInput? Input { get; set; }
+
+    [SupplyParameterFromQuery(Name = "token_hash")]
+    private string? TokenHash { get; set; }
+
+    private string? error;
+
+    protected override void OnInitialized()
+    {
+        Input ??= new ConfirmInput { TokenHash = TokenHash };
+        if (string.IsNullOrEmpty(Input.TokenHash))
+        {
+            error = AccountText.For(AuthStatus.InvalidLink);
+        }
+    }
+
+    private async Task ConfirmAsync()
+    {
+        var outcome = await Auth.VerifyEmailAsync(Input!.TokenHash!, HttpContext.Connection.RemoteIpAddress, HttpContext.RequestAborted);
+        if (outcome.Status == AuthStatus.SignedIn)
+        {
+            Sessions.Start(HttpContext, outcome.Session!);
+            Navigation.NavigateTo("/", forceLoad: true);
+            return;
+        }
+
+        error = AccountText.For(outcome.Status == AuthStatus.Unavailable ? AuthStatus.Unavailable : AuthStatus.InvalidLink);
+    }
+
+    private sealed class ConfirmInput
+    {
+        public string? TokenHash { get; set; }
+    }
+}

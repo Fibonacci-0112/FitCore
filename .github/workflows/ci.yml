@@ -48,8 +48,11 @@ jobs:
       - run: dotnet restore FitCore.slnx
       - run: dotnet format FitCore.slnx --no-restore --verify-no-changes
       - run: dotnet build FitCore.slnx --no-restore --configuration Release
-      # FitCore.Platform.Tests and the module test projects run against the local database, with migrations and seed applied.
-      - run: supabase db start
+      # FitCore.Platform.Tests and the module test projects run against the local stack, with migrations and seed applied:
+      # Postgres, plus Auth, its gateway and the mail catcher for the sign-up tests. The rest isn't needed.
+      - run: supabase start -x realtime,storage-api,imgproxy,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      # The local stack's secret key, for fitcore-app's Auth calls in the integration tests. Never committed (NFR-SEC-5).
+      - run: echo "Supabase__SecretKey=$(supabase status -o env | sed -n 's/^SECRET_KEY="\(.*\)"$/\1/p')" >> "$GITHUB_ENV"
       - run: dotnet test --solution FitCore.slnx --no-build --configuration Release
       - name: Domain coverage gate (NFR-MNT-1)
         run: |

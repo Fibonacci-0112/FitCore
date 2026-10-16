@@ -5,6 +5,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
+    <UserSecretsId>fitcore-apphost</UserSecretsId>
     <!-- DCP and the dashboard come from NuGet packages; the Aspire CLI bundle is not needed. -->
     <NoWarn>$(NoWarn);ASPIRE010</NoWarn>
   </PropertyGroup>
