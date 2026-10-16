@@ -66,6 +66,6 @@ The local database listens on `127.0.0.1:54322`. The .NET database tests (`tests
 The development project is `FitCore-Dev-DB` (implementation plan §2). For each hosted project:
 
 1. Apply the migrations: `npx supabase link --project-ref <ref>`, then `npx supabase db push`.
-2. Set the `fitcore_api` and `fitcore_catalog_import` passwords from the SQL editor, each with its own generated value: `alter role fitcore_api with password '…';`. Store them in the secret store (NFR-SEC-5), never in the repository.
+2. Set the `fitcore_api` and `fitcore_catalog_import` passwords from the SQL editor, each with its own generated value: `alter role fitcore_api with password '…';` and `alter role fitcore_catalog_import with password '…';`. Store them in the secret store (NFR-SEC-5), never in the repository.
 3. Connect the API through Supavisor session mode (port 5432 on the pooler host, user `fitcore_api.<ref>`) or directly. `FitCore.Platform` refuses transaction mode (port 6543) and `No Reset On Close` ([RLS spike §4](../docs/spikes/rls-connection-pooling.md#4-rules-for-the-api) rule 5).
 4. Keep the Data API's exposed schemas to `public` and `graphql_public`, and keep "Enable automatic RLS" off ([implementation plan §3.1](../docs/implementation-plan.md#31-database)).
