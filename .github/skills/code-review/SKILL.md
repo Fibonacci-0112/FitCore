@@ -18,7 +18,7 @@ Read the parts of these that the diff touches before you comment. When the diff 
 | [`CLAUDE.md`](../../../CLAUDE.md) | Repository conventions, commands and the condensed rules below |
 | [`docs/BRD.md`](../../../docs/BRD.md) | Roles, the [permission matrix](../../../docs/BRD.md#32-permission-matrix), [release phases](../../../docs/BRD.md#41-release-phases), [business rules](../../../docs/BRD.md#6-business-rules) |
 | [`docs/NFR.md`](../../../docs/NFR.md) | Measurable requirements with IDs such as `NFR-PRV-4` |
-| [`docs/decisions/`](../../../docs/decisions/) | Accepted ADRs, currently [ADR 0003](../../../docs/decisions/0003-modular-monolith.md) (modular monolith on ASP.NET Core with Supabase) |
+| [`docs/decisions/`](../../../docs/decisions/) | Accepted ADRs, currently [ADR 0003](../../../docs/decisions/0003-modular-monolith.md) (modular monolith on ASP.NET Core with Supabase) and [ADR 0005](../../../docs/decisions/0005-web-session.md) (web session) |
 | [RLS pooling rules](../../../docs/spikes/rls-connection-pooling.md#4-rules-for-the-api) | Database identity and connection rules for the API |
 | [Blazor build rules](../../../docs/spikes/blazor-prerendering-web-vitals.md#5-rules-for-the-build) | Web rendering, hydration and view-model rules |
 | [Auth and MFA rules](../../../docs/spikes/apple-sign-in-and-mfa.md#4-rules-for-the-build) | Sign-in, MFA, `aal2` and Apple token rules |
@@ -91,12 +91,16 @@ Don't report a finding you can't tie to a concrete failure or a written rule. Do
 - **Module boundaries.** A module uses another only through its contracts surface; architecture tests enforce this.
 - **Secrets** (service-role key, vendor keys) never appear in client builds, config files or the repository (NFR-SEC-5).
 
-### 4.5 Auth and MFA (auth spike)
+### 4.5 Auth and MFA (auth spike, ADR 0005)
 
 - TOTP is offered to everyone and required for clinicians and admins. "Required" is enforced in API policies (`aal2`) and in RLS; admin tooling checks `aal2` too (NFR-SEC-3, NFR-SEC-12).
 - Passkey sign-in counts as a single factor and never satisfies an MFA requirement. The undocumented WebAuthn factor is not used.
 - Native Apple sign-in on iOS uses a nonce, saves the name on first sign-in and sends the authorization code to the API. Account deletion in the DataRights module revokes Apple tokens, with a test.
 - Passwords follow NIST SP 800-63B-4: no composition rules, breached-password check, length limits from NFR-SEC-2. Access tokens last ≤ 1 hour and refresh tokens rotate (NFR-SEC-4).
+- **Web session** ([ADR 0005](../../../docs/decisions/0005-web-session.md)). The Supabase session lives only in the encrypted `__Host-fitcore-session` cookie (HttpOnly, Secure, `SameSite=Lax`). A token in WebAssembly state, `[PersistentState]`, prerendered HTML, JavaScript or browser storage is blocking. Sign-in, sign-up, step-up and sign-out run on the server and end with a full page load; OAuth uses PKCE and accepts only local return URLs.
+- **One identity.** Bearer and cookie requests go through the Platform authentication scheme and produce the same claims principal. Module code that reads the cookie or the `Authorization` header itself is blocking.
+- **Cross-site writes.** A cookie-authenticated `/v1` endpoint with a method other than `GET`, `HEAD` or `OPTIONS` must check the antiforgery header and a same-origin `Origin` (or `Sec-Fetch-Site`), with a test for each refusal. A `GET` that changes state, or CORS headers on `/v1`, is blocking.
+- **Auth logging.** Auth form bodies, tokens and cookie values never reach logs (NFR-PRV-6). Sign-in, sign-up, password-reset and step-up endpoints are rate-limited with progressive lockout (NFR-SEC-4).
 
 ### 4.6 Clients: shared code, Blazor and MAUI
 
