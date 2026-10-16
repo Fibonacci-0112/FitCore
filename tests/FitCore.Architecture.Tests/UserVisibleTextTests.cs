@@ -45,6 +45,7 @@ public sealed partial class UserVisibleTextTests
     [InlineData("<PageTitle>Sign in · FitCore</PageTitle>")]
     [InlineData("<nav aria-label=\"Account\">")]
     [InlineData("<input placeholder=\"you@example.com\" />")]
+    [InlineData("<input placeholder=\"@AccountStrings.EmailLabel (required)\" />")]
     [InlineData("@if (error is not null)\n{\n    <p>Try again</p>\n}")]
     [InlineData("Loose text at the start\n<p>@X</p>")]
     public void The_scan_catches_hard_coded_text(string razor)
@@ -61,6 +62,7 @@ public sealed partial class UserVisibleTextTests
     [InlineData("@* A comment may say anything. *@\n<!-- So may this. -->\n<p>@X</p>")]
     [InlineData("<p>@X</p>\n@code {\n    private string Text => \"<p>Not markup</p>\";\n}")]
     [InlineData("<p>@ShellStrings.AppName&nbsp;@@</p>")]
+    [InlineData("<a title=\"@TextFormat.PageTitle(AccountStrings.SignInHeading)\" href=\"\">@ShellStrings.AppName</a>")]
     public void The_scan_allows_resource_text(string razor)
     {
         Assert.Empty(HardCodedText(razor));
@@ -105,8 +107,9 @@ public sealed partial class UserVisibleTextTests
 
         foreach (Match attribute in VisibleAttribute().Matches(markup))
         {
-            var value = attribute.Groups[2].Value;
-            if (!value.StartsWith('@') && Letter().IsMatch(value))
+            // Expressions first, as for text nodes, so "@AccountStrings.EmailLabel (required)" still counts.
+            var value = Expressions().Replace(attribute.Groups[2].Value, "");
+            if (Letter().IsMatch(value))
             {
                 found.Add(attribute.Value);
             }
