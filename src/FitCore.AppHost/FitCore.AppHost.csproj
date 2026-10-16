@@ -10,6 +10,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Pins the Aspire SDK's transitive MessagePack to a patched version (Directory.Packages.props). -->
+    <PackageReference Include="MessagePack" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FitCore.Web\FitCore.Web.csproj" />
     <ProjectReference Include="..\FitCore.Worker\FitCore.Worker.csproj" />
   </ItemGroup>
