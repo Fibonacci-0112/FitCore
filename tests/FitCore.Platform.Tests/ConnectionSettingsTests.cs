@@ -10,6 +10,8 @@ public sealed class ConnectionSettingsTests
     [Theory]
     [InlineData("Host=aws-0-us-west-2.pooler.supabase.com;Port=6543;Username=fitcore_api.ref")]
     [InlineData("Host=db.ref.supabase.co;Port=6543;Username=fitcore_api")]
+    [InlineData("Host=10.0.4.12;Port=6543;Username=fitcore_api.ref")]
+    [InlineData("Host=pooler.internal.example;Port=6543;Username=fitcore_api.ref")]
     [InlineData("Host=127.0.0.1;Port=54322;Username=fitcore_api;No Reset On Close=true")]
     public void Unsafe_settings_are_refused(string connectionString)
     {
