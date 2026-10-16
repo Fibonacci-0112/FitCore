@@ -66,8 +66,10 @@ select is_empty(
     join pg_catalog.pg_namespace n on n.oid = c.relnamespace
     where n.nspname in (select pg_temp.fitcore_schemas())
       and c.relkind in ('r', 'p', 'v')
-      and pg_catalog.has_table_privilege('anon', c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE')$$,
-  'anon, the public key''s role, has no privileges on any table or view in a FitCore schema'
+      and (pg_catalog.has_table_privilege('anon', c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE')
+        -- has_table_privilege ignores column grants, such as GRANT SELECT (body) ... TO anon.
+        or pg_catalog.has_any_column_privilege('anon', c.oid, 'SELECT, INSERT, UPDATE'))$$,
+  'anon, the public key''s role, has no privileges on any table, view or column in a FitCore schema'
 );
 
 select * from finish();

@@ -7,11 +7,19 @@ namespace FitCore.Platform.Data;
 /// log in as <c>fitcore_api</c>, which has no table grants, and every statement runs inside a transaction that first
 /// switches to <c>authenticated</c> with the caller's claims. Work without an identity fails with 42501.
 /// </summary>
-public sealed class FitCoreDatabase
+/// <remarks>
+/// It owns the connection pool and closes it when disposed. The host's service provider does that on shutdown. The
+/// data source itself isn't registered, so nothing else can open a connection around the unit of work.
+/// </remarks>
+public sealed class FitCoreDatabase : IAsyncDisposable, IDisposable
 {
     private readonly NpgsqlDataSource _dataSource;
 
     internal FitCoreDatabase(NpgsqlDataSource dataSource) => _dataSource = dataSource;
+
+    public ValueTask DisposeAsync() => _dataSource.DisposeAsync();
+
+    public void Dispose() => _dataSource.Dispose();
 
     /// <summary>Opens a transaction that runs as <paramref name="identity"/>. Use it for writes and for reads of several statements.</summary>
     public Task<UnitOfWork> BeginAsync(DbIdentity identity, CancellationToken cancellationToken = default)

@@ -107,6 +107,20 @@ public sealed class UnitOfWorkTests(LocalDatabase db)
     }
 
     [Fact]
+    public async Task The_affected_row_count_leaves_out_reads()
+    {
+        var caller = new DbIdentity(Guid.NewGuid());
+        await using var dataSource = db.ApiDataSource();
+
+        await using var work = await LocalDatabase.Database(dataSource).BeginAsync(caller, Cancel);
+        await using var batch = work.CreateBatch();
+        batch.BatchCommands.Add(new NpgsqlBatchCommand($"select count(*) from {Notes}"));
+        batch.BatchCommands.Add(new NpgsqlBatchCommand($"insert into {Notes} (body) values ('one')"));
+
+        Assert.Equal(1, await work.ExecuteNonQueryAsync(batch, Cancel));
+    }
+
+    [Fact]
     public async Task Disposing_without_commit_rolls_back()
     {
         var caller = new DbIdentity(Guid.NewGuid());

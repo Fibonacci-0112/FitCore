@@ -50,8 +50,10 @@ select is_empty(
     where n.nspname not in ('pg_catalog', 'information_schema', 'extensions')
       and n.nspname not like 'pg\_temp\_%'
       and c.relkind in ('r', 'p', 'v', 'm', 'f')
-      and pg_catalog.has_table_privilege('fitcore_api', c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER')$$,
-  'fitcore_api can''t read or write any table or view, through PUBLIC or otherwise'
+      and (pg_catalog.has_table_privilege('fitcore_api', c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER')
+        -- has_table_privilege ignores column grants, which can also reach fitcore_api through PUBLIC.
+        or pg_catalog.has_any_column_privilege('fitcore_api', c.oid, 'SELECT, INSERT, UPDATE, REFERENCES'))$$,
+  'fitcore_api can''t read or write any table, view or column, through PUBLIC or otherwise'
 );
 
 select is_empty(

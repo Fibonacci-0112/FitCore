@@ -40,13 +40,16 @@ internal static class Identity
         }
     }
 
-    /// <summary>The rows the batch's own commands affected, leaving out the identity's two.</summary>
+    /// <summary>
+    /// The rows the batch's own commands inserted, updated or deleted, leaving out the identity's two. Npgsql reports
+    /// -1 for a command that affects no rows by its nature, such as SET, SELECT or DDL, so those count as none.
+    /// </summary>
     public static int RecordsAffected(NpgsqlBatch batch, bool prepended)
     {
         var total = 0L;
         for (var i = prepended ? 2 : 0; i < batch.BatchCommands.Count; i++)
         {
-            total += batch.BatchCommands[i].RecordsAffected;
+            total += Math.Max(0, batch.BatchCommands[i].RecordsAffected);
         }
 
         return checked((int)total);

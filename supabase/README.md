@@ -23,7 +23,7 @@ The first migration, `20261016000000_database_foundation.sql`, creates:
 
 | Test | Checks |
 |---|---|
-| `rls_coverage.test.sql` | Every table in a FitCore schema (`public`, the module schemas and any schema added later) has RLS enabled; views are `security_invoker`; there are no materialized views or foreign tables; `anon` has no table privileges (NFR-PRV-1) |
+| `rls_coverage.test.sql` | Every table in a FitCore schema (`public`, the module schemas and any schema added later) has RLS enabled; views are `security_invoker`; there are no materialized views or foreign tables; `anon` has no table or column privileges (NFR-PRV-1) |
 | `api_role.test.sql` | `fitcore_api` has no attributes, grants or memberships beyond switching to `authenticated` ([RLS spike §5](../docs/spikes/rls-connection-pooling.md#5-open-points)) |
 | `actors.test.sql` | The six-actor helper switches role and claims the way the unit of work does |
 

@@ -30,6 +30,17 @@ public sealed class ConnectionSettingsTests
     }
 
     [Fact]
+    public async Task Disposing_the_host_closes_the_connection_pool()
+    {
+        var services = Services("Host=127.0.0.1;Port=54322;Username=fitcore_api");
+        var database = services.GetRequiredService<FitCoreDatabase>();
+
+        await services.DisposeAsync();
+
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => database.BeginAsync(new DbIdentity(Guid.NewGuid()), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public void A_missing_connection_string_fails_only_when_the_database_is_used()
     {
         using var services = Services(null);
