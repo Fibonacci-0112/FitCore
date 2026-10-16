@@ -5,14 +5,20 @@
 -- It creates the tests schema, six auth.users rows and the functions below, and the test's rollback removes them.
 -- The file ends in .psql so `supabase test db` doesn't run it as a test of its own.
 --
---   tests.actor(name)        the actor's user id
---   tests.act_as(name)       SET LOCAL ROLE authenticated with the actor's claims, as the API's unit of work does
---   tests.act_as_anon()      SET LOCAL ROLE anon with no claims, as a request with only the public key
---   tests.act_as_postgres()  back to the test's own role, to insert fixtures or check rows directly
+--   tests.actor(name)            the actor's user id
+--   tests.act_as(name[, aal])    SET LOCAL ROLE authenticated with the actor's claims, as the API's unit of work
+--                                does; aal overrides the actor's assurance level
+--   tests.act_as_anon()          SET LOCAL ROLE anon with no claims, as a request with only the public key
+--   tests.act_as_postgres()      back to the test's own role, to insert fixtures or check rows directly
+--   tests.grant_scope(scope[, role])
+--                                as postgres: the owner's grants to the three grantees, see below
+--   tests.rows(statement)        runs an INSERT, UPDATE or DELETE as the current role and returns the rows it
+--                                changed. RLS filters rows out of UPDATE and DELETE silently, so 0 is the denial
 --
--- Grantees are plain members until a test gives them a care.relationships row: grantee_in_scope an active grant
--- with the scope under test, grantee_out_of_scope an active grant without it, and revoked_grantee a revoked one.
--- The admin actor is an authenticated user marked admin in app_metadata, signed in at aal2.
+-- Grantees are plain members until a test gives them a care.relationships row. tests.grant_scope gives
+-- grantee_in_scope an active grant from the owner with the scope under test, grantee_out_of_scope an active grant
+-- with every other scope, and revoked_grantee a revoked grant with the scope under test. The admin actor is an
+-- authenticated user marked admin in app_metadata, signed in at aal2.
 
 create extension if not exists pgtap with schema extensions;
 
@@ -61,7 +67,7 @@ $$;
 
 -- These three can't be security definer: Postgres doesn't allow SET ROLE inside one. They run as the caller, so a
 -- test can switch from one actor to another without going back to postgres first.
-create function tests.act_as(p_name text) returns void
+create function tests.act_as(p_name text, p_aal text default null) returns void
 language plpgsql set search_path = ''
 as $$
 declare
@@ -69,6 +75,9 @@ declare
 begin
   if v_claims is null then
     raise exception 'Unknown actor %', p_name;
+  end if;
+  if p_aal is not null then
+    v_claims := v_claims || jsonb_build_object('aal', p_aal);
   end if;
   perform set_config('request.jwt.claims', v_claims::text, true);
   set local role authenticated;
@@ -93,4 +102,30 @@ begin
 end
 $$;
 
+create function tests.grant_scope(p_scope text, p_role text default 'coach') returns void
+language sql set search_path = ''
+as $$
+  insert into care.relationships (member_id, professional_id, role, scopes, status, granted_at, revoked_at)
+  values
+    (tests.actor('owner'), tests.actor('grantee_in_scope'), p_role, array[p_scope], 'active', now(), null),
+    (tests.actor('owner'), tests.actor('grantee_out_of_scope'), p_role,
+     array_remove(array['nutrition', 'training', 'body_metrics', 'photos', 'wellness'], p_scope), 'active', now(), null),
+    (tests.actor('owner'), tests.actor('revoked_grantee'), p_role, array[p_scope], 'revoked',
+     now() - interval '1 day', now());
+$$;
+
+create function tests.rows(p_statement text) returns bigint
+language plpgsql set search_path = ''
+as $$
+declare
+  v_rows bigint;
+begin
+  execute p_statement;
+  get diagnostics v_rows = row_count;
+  return v_rows;
+end
+$$;
+
 grant execute on all functions in schema tests to anon, authenticated;
+-- Fixtures only, never as an actor.
+revoke execute on function tests.grant_scope(text, text) from public, anon, authenticated;
