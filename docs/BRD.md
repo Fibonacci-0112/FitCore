@@ -133,7 +133,7 @@ R = read, W = write, — = no access. "Granted" means within an active grant and
 - **Days without a diary record are unknown**, never zero intake. Only days marked complete feed adaptive targets.
 - **Money** is integer minor units plus an ISO 4217 code. No currency conversion in early releases.
 - **"Estimated food cost"** is consumption cost and is always labelled as an estimate. It is never called "spend". Actual spend comes only from purchase records.
-- **Units:** g and ml are canonical, with household measures as servings. Mass↔volume conversion only with a known density. Impossible conversions are rejected, never guessed.
+- **Units:** g and ml are canonical. Standard mass units (mg, kg, oz, lb) and volume units (l, tsp, tbsp, fl oz, cup, pint, quart, gallon) convert exactly to them, using the US customary definitions (a cup is 236.6 ml). Food-specific measures, such as "1 slice" or a label's "1 cup, chopped = 128 g", are servings. Mass↔volume conversion only with a known density. Impossible conversions are rejected, never guessed.
 - **Snapshots:** a log entry keeps the nutrients and cost at log time. Editing a food or price never rewrites history.
 - **Dates:** diary dates are the member's local calendar date.
 - **Shared catalog:** only the service writes shared food and exercise rows, and admins curate them. Members, coaches and clinicians write only their own custom items.

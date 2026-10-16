@@ -7,3 +7,6 @@ node_modules/
 
 # Spike publish output
 spikes/blazor-web-vitals/publish/
+
+# Test results and coverage reports
+TestResults/

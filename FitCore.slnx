@@ -24,6 +24,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/FitCore.Architecture.Tests/FitCore.Architecture.Tests.csproj" />
+    <Project Path="tests/FitCore.Domain.Tests/FitCore.Domain.Tests.csproj" />
     <Project Path="tests/FitCore.Web.Tests/FitCore.Web.Tests.csproj" />
   </Folder>
 </Solution>

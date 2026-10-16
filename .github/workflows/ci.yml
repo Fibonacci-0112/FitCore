@@ -46,6 +46,11 @@ jobs:
       - run: dotnet format FitCore.slnx --no-restore --verify-no-changes
       - run: dotnet build FitCore.slnx --no-restore --configuration Release
       - run: dotnet test --solution FitCore.slnx --no-build --configuration Release
+      - name: Domain coverage gate (NFR-MNT-1)
+        run: |
+          dotnet test --project tests/FitCore.Domain.Tests --no-build --configuration Release \
+            --coverage --coverage-output-format cobertura --coverage-output domain.cobertura.xml --results-directory TestResults
+          python3 tests/coverage-gate.py TestResults/domain.cobertura.xml FitCore.Domain 90
 
   spikes:
     name: Build spikes

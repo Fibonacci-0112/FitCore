@@ -25,7 +25,8 @@ This plan turns the requirements and the accepted architecture into a build orde
 
 - **Done:** ADR 0003; the RLS and Blazor spikes; the render-mode comparison; the solution scaffold (`FitCore.slnx`, 12 empty modules, both hosts, architecture tests and pipeline tests in CI).
 - **Partly done:** the auth spike. The on-device Sign in with Apple test is still to run ([auth spike §5](spikes/apple-sign-in-and-mfa.md#5-device-test-plan-for-sign-in-with-apple)).
-- **Not started:** the cost model (ADR 0003 follow-up 4). Still missing from the scaffold (follow-up 5): `FitCore.Maui`, `supabase/` with the pgTAP harness, `FitCore.Domain.Tests` with the coverage gate, the module test projects and `FitCore.Load.Tests`.
+- **Not started:** the cost model (ADR 0003 follow-up 4). Still missing from the scaffold (follow-up 5): `FitCore.Maui`, `supabase/` with the pgTAP harness, the module test projects and `FitCore.Load.Tests`.
+- **R1 progress:** [PR 1](#pr-1-domain-library), the domain library with `FitCore.Domain.Tests` and its coverage gate, is done.
 - **Environments:** the first hosted Supabase project exists: `FitCore-Dev-DB` in the `Fibonacci-0112` organization (`https://apauhqfldklnmqthubno.supabase.co`, Postgres 17, `us-west-2`). It is the shared development and staging database for R1. Production is a separate project, created in [PR 9](#pr-9-beta-environments-and-release).
 
 ## 3. Foundations
