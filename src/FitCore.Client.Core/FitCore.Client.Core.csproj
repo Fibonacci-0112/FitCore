@@ -2,6 +2,11 @@
 
   <!-- View models, the encrypted offline store and the sync engine, shared by the MAUI app and the Blazor client. -->
 
+  <PropertyGroup>
+    <!-- Resources/*.resx: the text both UIs show, public so the web host and the MAUI app can use it (Directory.Build.targets). -->
+    <PublicResources>true</PublicResources>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" />
   </ItemGroup>

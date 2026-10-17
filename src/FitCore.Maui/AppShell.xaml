@@ -7,7 +7,8 @@
        xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
        xmlns:pages="clr-namespace:FitCore.Maui.Pages"
-       Title="FitCore"
+       xmlns:strings="clr-namespace:FitCore.Client.Core.Resources;assembly=FitCore.Client.Core"
+       Title="{x:Static strings:ShellStrings.AppName}"
        Shell.FlyoutBehavior="Disabled">
 
     <ShellContent Route="sign-up"

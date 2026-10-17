@@ -436,6 +436,32 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
     }
 
     [Fact]
+    public async Task Signing_out_with_a_cookie_that_no_longer_decrypts_still_clears_the_browser()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/account/sign-out") { Content = new FormUrlEncodedContent([]) };
+        request.Headers.Add("Cookie", "__Host-fitcore-session=not-a-session");
+        request.Headers.Add("Origin", "https://localhost");
+
+        using var response = await browser.SendAsync(request, Cancel);
+
+        Assert.Equal("/", RedirectPath(response));
+        Assert.Equal("\"cache\", \"storage\"", Assert.Single(response.Headers.GetValues("Clear-Site-Data")));
+        Assert.Contains(response.Headers.GetValues("Set-Cookie"), c => c.StartsWith("__Host-fitcore-session=;", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_cross_site_sign_out_with_a_damaged_cookie_clears_nothing()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/account/sign-out") { Content = new FormUrlEncodedContent([]) };
+        request.Headers.Add("Cookie", "__Host-fitcore-session=not-a-session");
+        request.Headers.Add("Origin", "https://evil.example");
+
+        using var response = await browser.SendAsync(request, Cancel);
+
+        Assert.False(response.Headers.Contains("Clear-Site-Data"));
+    }
+
+    [Fact]
     public async Task A_cross_site_sign_out_without_the_cookie_changes_nothing()
     {
         // SameSite=Lax keeps the cookie off a cross-site POST, so the browser may still hold a session.

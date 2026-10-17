@@ -1,5 +1,7 @@
+using System.Net;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
+using FitCore.Platform.Resources;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -27,9 +29,10 @@ internal static class Challenges
         {
             // A body of its own, so the status code pages don't swap in the not-found page.
             context.Response.ContentType = "text/html; charset=utf-8";
+            static string Html(string text) => WebUtility.HtmlEncode(text);
             await context.Response.WriteAsync(
-                "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>FitCore</title></head><body>"
-                + "<h1>Sign-in is unavailable</h1><p>FitCore couldn't reach its sign-in service. Your work is safe; try again in a moment.</p>"
+                $"<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>{Html(AuthStrings.OutageTitle)}</title></head><body>"
+                + $"<h1>{Html(AuthStrings.OutageHeading)}</h1><p>{Html(AuthStrings.OutageBody)}</p>"
                 + "</body></html>");
         }
     }

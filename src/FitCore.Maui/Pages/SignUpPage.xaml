@@ -4,8 +4,9 @@
              xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:accounts="clr-namespace:FitCore.Client.Core.Accounts;assembly=FitCore.Client.Core"
+             xmlns:strings="clr-namespace:FitCore.Client.Core.Resources;assembly=FitCore.Client.Core"
              x:DataType="accounts:SignUpViewModel"
-             Title="{x:Static accounts:AccountStrings.SignUpTitle}"
+             Title="{x:Static strings:AccountStrings.SignUpTitle}"
              Shell.NavBarIsVisible="False">
 
     <!-- Scrolls, so nothing is clipped at 200% text size (NFR-ACC-3). -->
@@ -13,58 +14,58 @@
         <VerticalStackLayout Padding="16,32" Spacing="8" MaximumWidthRequest="560">
 
             <VerticalStackLayout Spacing="8" IsVisible="{Binding IsFormVisible}">
-                <Label Text="{x:Static accounts:AccountStrings.SignUpTitle}" Style="{StaticResource Headline}" />
+                <Label Text="{x:Static strings:AccountStrings.SignUpTitle}" Style="{StaticResource Headline}" />
 
-                <Label Text="{x:Static accounts:AccountStrings.NameLabel}" Margin="0,16,0,0" />
+                <Label Text="{x:Static strings:AccountStrings.NameLabel}" Margin="0,16,0,0" />
                 <Entry Text="{Binding DisplayName}"
                        MaxLength="80"
                        Keyboard="Text"
                        IsTextPredictionEnabled="False"
-                       SemanticProperties.Description="{x:Static accounts:AccountStrings.NameLabel}" />
+                       SemanticProperties.Description="{x:Static strings:AccountStrings.NameLabel}" />
 
-                <Label Text="{x:Static accounts:AccountStrings.EmailLabel}" Margin="0,8,0,0" />
+                <Label Text="{x:Static strings:AccountStrings.EmailLabel}" Margin="0,8,0,0" />
                 <Entry Text="{Binding Email}"
                        MaxLength="254"
                        Keyboard="Email"
                        IsSpellCheckEnabled="False"
                        IsTextPredictionEnabled="False"
-                       SemanticProperties.Description="{x:Static accounts:AccountStrings.EmailLabel}" />
+                       SemanticProperties.Description="{x:Static strings:AccountStrings.EmailLabel}" />
 
-                <Label Text="{x:Static accounts:AccountStrings.PasswordLabel}" Margin="0,8,0,0" />
+                <Label Text="{x:Static strings:AccountStrings.PasswordLabel}" Margin="0,8,0,0" />
                 <Entry Text="{Binding Password}"
                        MaxLength="64"
                        IsPassword="True"
                        IsSpellCheckEnabled="False"
                        IsTextPredictionEnabled="False"
-                       SemanticProperties.Description="{x:Static accounts:AccountStrings.PasswordLabel}"
-                       SemanticProperties.Hint="{x:Static accounts:AccountStrings.PasswordHelp}" />
-                <Label Text="{x:Static accounts:AccountStrings.PasswordHelp}" Style="{StaticResource Help}" />
+                       SemanticProperties.Description="{x:Static strings:AccountStrings.PasswordLabel}"
+                       SemanticProperties.Hint="{x:Static strings:AccountStrings.PasswordHelp}" />
+                <Label Text="{x:Static strings:AccountStrings.PasswordHelp}" Style="{StaticResource Help}" />
 
-                <Label Text="{x:Static accounts:AccountStrings.BirthDateLabel}" Margin="0,8,0,0" />
+                <Label Text="{x:Static strings:AccountStrings.BirthDateLabel}" Margin="0,8,0,0" />
                 <DatePicker Date="{Binding BirthDate}"
                             MaximumDate="{Binding Today}"
-                            SemanticProperties.Description="{x:Static accounts:AccountStrings.BirthDateLabel}"
-                            SemanticProperties.Hint="{x:Static accounts:AccountStrings.BirthDateHelp}" />
-                <Label Text="{x:Static accounts:AccountStrings.BirthDateHelp}" Style="{StaticResource Help}" />
+                            SemanticProperties.Description="{x:Static strings:AccountStrings.BirthDateLabel}"
+                            SemanticProperties.Hint="{x:Static strings:AccountStrings.BirthDateHelp}" />
+                <Label Text="{x:Static strings:AccountStrings.BirthDateHelp}" Style="{StaticResource Help}" />
 
                 <Label Text="{Binding Error}"
                        IsVisible="{Binding HasError}"
                        Style="{StaticResource Error}"
                        Margin="0,8,0,0" />
 
-                <Button Text="{x:Static accounts:AccountStrings.CreateAccount}"
+                <Button Text="{x:Static strings:AccountStrings.CreateAccount}"
                         Command="{Binding SignUpCommand}"
                         Margin="0,16,0,0" />
                 <ActivityIndicator IsRunning="{Binding IsBusy}"
                                    IsVisible="{Binding IsBusy}"
-                                   SemanticProperties.Description="{x:Static accounts:AccountStrings.CreatingAccount}" />
+                                   SemanticProperties.Description="{x:Static strings:AccountStrings.CreatingAccount}" />
             </VerticalStackLayout>
 
             <VerticalStackLayout Spacing="16" IsVisible="{Binding IsConfirmationSent}">
-                <Label Text="{x:Static accounts:AccountStrings.CheckEmailTitle}" Style="{StaticResource Headline}" />
-                <Label Text="{x:Static accounts:AccountStrings.CheckEmailBody}" />
-                <Label Text="{x:Static accounts:AccountStrings.CheckEmailHelp}" Style="{StaticResource Help}" />
-                <Button Text="{x:Static accounts:AccountStrings.SignUpAgain}"
+                <Label Text="{x:Static strings:AccountStrings.CheckEmailTitle}" Style="{StaticResource Headline}" />
+                <Label Text="{x:Static strings:AccountStrings.CheckEmailBody}" />
+                <Label Text="{x:Static strings:AccountStrings.CheckEmailHelp}" Style="{StaticResource Help}" />
+                <Button Text="{x:Static strings:AccountStrings.SignUpAgain}"
                         Command="{Binding SignUpAgainCommand}" />
             </VerticalStackLayout>
 

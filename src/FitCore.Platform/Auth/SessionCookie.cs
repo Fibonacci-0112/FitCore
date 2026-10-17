@@ -29,6 +29,12 @@ internal sealed class SessionCookie
         _time = time;
     }
 
+    /// <summary>
+    /// Whether the request brought a session cookie at all, whether or not it decrypts. A chunked session's base cookie
+    /// carries the name too. ASP.NET Core drops a cookie with an empty value; FitCore never writes one.
+    /// </summary>
+    public static bool IsPresent(HttpContext context) => context.Request.Cookies.ContainsKey(Name);
+
     /// <summary>The session in the request's cookie, or null if there is none or it doesn't decrypt.</summary>
     public AuthSession? Read(HttpContext context)
     {

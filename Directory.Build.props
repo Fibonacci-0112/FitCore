@@ -12,6 +12,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- CS1591: missing XML comments on public members. Public surface is small and documented where it matters. -->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- The language of the strings in Resources/*.resx; other languages are satellite assemblies (NFR-L10N-1, NFR-L10N-2). -->
+    <NeutralLanguage>en-US</NeutralLanguage>
   </PropertyGroup>
 
 </Project>

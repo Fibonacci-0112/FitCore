@@ -29,7 +29,8 @@ public sealed partial class FitCoreApp : WebApplicationFactory<Program>
     });
 
     /// <summary>Signs in through the sign-in page, as a member would.</summary>
-    public static async Task<HttpResponseMessage> SignInAsync(HttpClient browser, string password = FakeSupabase.Password, string returnUrl = "")
+    public static async Task<HttpResponseMessage> SignInAsync(
+        HttpClient browser, string password = FakeSupabase.Password, string returnUrl = "", string email = "member@members.test")
     {
         var path = "/account/sign-in" + (returnUrl.Length > 0 ? "?returnUrl=" + Uri.EscapeDataString(returnUrl) : "");
         var page = await browser.GetStringAsync(path, TestContext.Current.CancellationToken);
@@ -37,7 +38,7 @@ public sealed partial class FitCoreApp : WebApplicationFactory<Program>
         {
             ["_handler"] = "sign-in",
             ["__RequestVerificationToken"] = AntiforgeryToken(page),
-            ["Input.Email"] = "member@members.test",
+            ["Input.Email"] = email,
             ["Input.Password"] = password,
         });
         return await browser.PostAsync(path, form, TestContext.Current.CancellationToken);

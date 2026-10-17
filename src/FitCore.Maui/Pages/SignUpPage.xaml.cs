@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using FitCore.Client.Core.Accounts;
+using FitCore.Client.Core.Resources;
 
 namespace FitCore.Maui.Pages;
 

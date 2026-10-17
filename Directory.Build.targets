@@ -1,0 +1,18 @@
+<Project>
+
+  <!-- User-visible text lives in Resources/*.resx (NFR-L10N-2). Each file gets a generated class of static properties
+       in <RootNamespace>.Resources, which Razor, XAML and validation attributes (ErrorMessageResourceType) can all use.
+       The class is internal unless the project sets PublicResources, as FitCore.Client.Core does for both UIs.
+       spikes/ has its own Directory.Build.targets and doesn't inherit this. -->
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\*.resx">
+      <Generator>MSBuild:Compile</Generator>
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedNamespace>$(RootNamespace).Resources</StronglyTypedNamespace>
+      <StronglyTypedClassName>%(Filename)</StronglyTypedClassName>
+      <StronglyTypedFileName>$(IntermediateOutputPath)%(Filename).Designer.cs</StronglyTypedFileName>
+      <PublicClass>$(PublicResources)</PublicClass>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

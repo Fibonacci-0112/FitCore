@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="AppName" xml:space="preserve">
+    <value>FitCore</value>
+    <comment>The product name, in the header and page titles.</comment>
+  </data>
+  <data name="PageTitleFormat" xml:space="preserve">
+    <value>{0} · FitCore</value>
+    <comment>{0} is the page name.</comment>
+  </data>
+  <data name="NotFoundHeading" xml:space="preserve">
+    <value>Not found</value>
+  </data>
+  <data name="NotFoundBody" xml:space="preserve">
+    <value>There's nothing at this address.</value>
+  </data>
+  <data name="ErrorHeading" xml:space="preserve">
+    <value>Something went wrong</value>
+  </data>
+  <data name="ErrorBody" xml:space="preserve">
+    <value>Please try again. If it keeps happening, contact support.</value>
+  </data>
+  <data name="HomeSignedIn" xml:space="preserve">
+    <value>You're signed in.</value>
+  </data>
+  <data name="HomeIntro" xml:space="preserve">
+    <value>Plan your targets and track what you eat. {0} to start.</value>
+    <comment>{0} is a link whose text is AccountStrings.CreateAccountLink.</comment>
+  </data>
+</root>

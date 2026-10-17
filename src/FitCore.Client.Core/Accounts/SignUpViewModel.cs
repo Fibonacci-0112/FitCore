@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FitCore.Client.Core.Resources;
 using FitCore.Domain.Calendar;
 
 namespace FitCore.Client.Core.Accounts;
@@ -92,7 +93,7 @@ public sealed partial class SignUpViewModel : ObservableObject
             }
             else
             {
-                Error = AccountStrings.For(status);
+                Error = SignUpMessages.For(status);
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

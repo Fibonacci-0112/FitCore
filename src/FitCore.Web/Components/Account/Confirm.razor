@@ -6,20 +6,20 @@
 
 @* Opening the link only shows this page; confirming takes a POST, so a link alone can't sign anyone in. *@
 
-<PageTitle>Confirm your email · FitCore</PageTitle>
+<PageTitle>@TextFormat.PageTitle(AccountStrings.ConfirmHeading)</PageTitle>
 
-<h1>Confirm your email</h1>
+<h1>@AccountStrings.ConfirmHeading</h1>
 
 @if (error is not null)
 {
     <p role="alert">@error</p>
-    <p><a href="account/sign-in">Sign in</a></p>
+    <p><a href="account/sign-in">@AccountStrings.SignInLink</a></p>
 }
 else
 {
     <EditForm Model="Input!" FormName="confirm" OnValidSubmit="ConfirmAsync" method="post">
         <InputText @bind-Value="Input!.TokenHash" type="hidden" />
-        <button type="submit">Confirm and sign in</button>
+        <button type="submit">@AccountStrings.ConfirmButton</button>
     </EditForm>
 }
 

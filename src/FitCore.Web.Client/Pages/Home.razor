@@ -1,14 +1,14 @@
 @page "/"
 
-<PageTitle>FitCore</PageTitle>
+<PageTitle>@ShellStrings.AppName</PageTitle>
 
-<h1>FitCore</h1>
+<h1>@ShellStrings.AppName</h1>
 
 <AuthorizeView>
     <Authorized>
-        <p>You're signed in.</p>
+        <p>@ShellStrings.HomeSignedIn</p>
     </Authorized>
     <NotAuthorized>
-        <p>Plan your targets and track what you eat. <a href="account/sign-up" data-enhance-nav="false">Create an account</a> to start.</p>
+        <p><LinkedText Format="@ShellStrings.HomeIntro" Href="account/sign-up" Text="@AccountStrings.CreateAccountLink" data-enhance-nav="false" /></p>
     </NotAuthorized>
 </AuthorizeView>

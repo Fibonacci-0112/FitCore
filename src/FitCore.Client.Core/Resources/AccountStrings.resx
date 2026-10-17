@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="AccountNavLabel" xml:space="preserve">
+    <value>Account</value>
+    <comment>Screen-reader name of the header navigation.</comment>
+  </data>
+  <data name="SignInLink" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="SignInButton" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="SignOutButton" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="CreateAccountNav" xml:space="preserve">
+    <value>Create account</value>
+    <comment>Header link to the sign-up page.</comment>
+  </data>
+  <data name="CreateAccountLink" xml:space="preserve">
+    <value>Create an account</value>
+    <comment>Link in a sentence; see HomeIntro and NewToFitCore.</comment>
+  </data>
+  <data name="CreateAccount" xml:space="preserve">
+    <value>Create account</value>
+  </data>
+  <data name="CreatingAccount" xml:space="preserve">
+    <value>Creating your account</value>
+    <comment>Screen-reader name of the busy indicator while the account is created.</comment>
+  </data>
+  <data name="SignUpTitle" xml:space="preserve">
+    <value>Create your account</value>
+  </data>
+  <data name="NameLabel" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="EmailLabel" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="PasswordLabel" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="PasswordHelp" xml:space="preserve">
+    <value>At least 15 characters. A few unrelated words work well.</value>
+    <comment>NFR-SEC-2: length is the only rule.</comment>
+  </data>
+  <data name="BirthDateLabel" xml:space="preserve">
+    <value>Date of birth</value>
+  </data>
+  <data name="BirthDateHelp" xml:space="preserve">
+    <value>FitCore is for adults 18 and over.</value>
+  </data>
+  <data name="HaveAccount" xml:space="preserve">
+    <value>Already have an account? {0}</value>
+    <comment>{0} is a link whose text is SignInLink.</comment>
+  </data>
+  <data name="SignInHeading" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="NewToFitCore" xml:space="preserve">
+    <value>New to FitCore? {0}</value>
+    <comment>{0} is a link whose text is CreateAccountLink.</comment>
+  </data>
+  <data name="CheckEmailTitle" xml:space="preserve">
+    <value>Check your email</value>
+  </data>
+  <data name="CheckEmailSent" xml:space="preserve">
+    <value>We sent you a link to confirm your email address. Open it on this device to finish creating your account.</value>
+    <comment>Web: the link opens in the browser it was sent from.</comment>
+  </data>
+  <data name="CheckEmailBody" xml:space="preserve">
+    <value>We sent you a link to confirm your email address. Open it to finish creating your account.</value>
+    <comment>Device apps.</comment>
+  </data>
+  <data name="CheckEmailMissing" xml:space="preserve">
+    <value>No email? Check your spam folder, or {0} in a few minutes.</value>
+    <comment>{0} is a link whose text is SignUpAgainLink.</comment>
+  </data>
+  <data name="SignUpAgainLink" xml:space="preserve">
+    <value>sign up again</value>
+    <comment>Link in the middle of CheckEmailMissing.</comment>
+  </data>
+  <data name="CheckEmailHelp" xml:space="preserve">
+    <value>No email? Check your spam folder, or sign up again in a few minutes.</value>
+    <comment>Device apps, above the SignUpAgain button.</comment>
+  </data>
+  <data name="SignUpAgain" xml:space="preserve">
+    <value>Sign up again</value>
+    <comment>Device apps: a button.</comment>
+  </data>
+  <data name="ConfirmHeading" xml:space="preserve">
+    <value>Confirm your email</value>
+  </data>
+  <data name="ConfirmButton" xml:space="preserve">
+    <value>Confirm and sign in</value>
+  </data>
+  <data name="SignOutFailedTitle" xml:space="preserve">
+    <value>Couldn't sign out</value>
+  </data>
+  <data name="SignOutFailedHeading" xml:space="preserve">
+    <value>You're still signed in</value>
+  </data>
+  <data name="SignOutFailedBody" xml:space="preserve">
+    <value>FitCore couldn't reach its sign-in service to end your session. Try again in a moment.</value>
+  </data>
+  <data name="NameRequired" xml:space="preserve">
+    <value>Enter your name.</value>
+  </data>
+  <data name="NameTooLong" xml:space="preserve">
+    <value>Use 80 characters or fewer for your name.</value>
+  </data>
+  <data name="EmailRequired" xml:space="preserve">
+    <value>Enter your email address.</value>
+  </data>
+  <data name="EmailInvalid" xml:space="preserve">
+    <value>Enter a valid email address.</value>
+  </data>
+  <data name="EmailTooLong" xml:space="preserve">
+    <value>Use 254 characters or fewer for your email address.</value>
+  </data>
+  <data name="PasswordRequired" xml:space="preserve">
+    <value>Choose a password.</value>
+    <comment>Sign-up.</comment>
+  </data>
+  <data name="PasswordLength" xml:space="preserve">
+    <value>Use 15 to 64 characters for your password.</value>
+  </data>
+  <data name="CurrentPasswordRequired" xml:space="preserve">
+    <value>Enter your password.</value>
+    <comment>Sign-in.</comment>
+  </data>
+  <data name="BirthDateRequired" xml:space="preserve">
+    <value>Enter your date of birth.</value>
+  </data>
+  <data name="TooYoung" xml:space="preserve">
+    <value>You need to be 18 or older to use FitCore.</value>
+  </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>That email address and password don't match an account.</value>
+  </data>
+  <data name="EmailNotConfirmed" xml:space="preserve">
+    <value>Confirm your email address first: open the link we sent you. If it has expired, sign up again with the same address and we'll send a new one.</value>
+  </data>
+  <data name="EmailTaken" xml:space="preserve">
+    <value>An account with that email address already exists. Sign in instead.</value>
+  </data>
+  <data name="WeakPassword" xml:space="preserve">
+    <value>Choose a longer password, or one that hasn't appeared in a data breach.</value>
+  </data>
+  <data name="InvalidLink" xml:space="preserve">
+    <value>That confirmation link has expired or was already used. If you haven't confirmed yet, sign up again with the same address and we'll send a new one.</value>
+  </data>
+  <data name="Refused" xml:space="preserve">
+    <value>FitCore couldn't use those details. Check your email address and try again.</value>
+  </data>
+  <data name="RateLimited" xml:space="preserve">
+    <value>Too many attempts. Wait a few minutes and try again.</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>FitCore couldn't reach its sign-in service. Try again in a moment.</value>
+  </data>
+</root>

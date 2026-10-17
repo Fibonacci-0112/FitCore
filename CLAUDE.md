@@ -23,7 +23,7 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `FitCore.slnx` | The solution: everything under `src/` and `tests/` |
 | `src/FitCore.Domain/` | Shared rules (BRD §6): quantities and units, nutrient totals, money and estimated cost, diary snapshots, local dates, targets and guardrails. No I/O and no references |
 | `src/FitCore.Contracts/` | Versioned DTOs and the typed API client (`/v1`) |
-| `src/FitCore.Client.Core/` | View models, offline store and sync engine, shared by the MAUI app and the Blazor client. `Accounts/` holds the sign-up view model, the `IMemberAccounts` interface and the account screens' strings (`AccountStrings.resx`) |
+| `src/FitCore.Client.Core/` | View models, offline store and sync engine, shared by the MAUI app and the Blazor client. `Resources/` holds the text both UIs show (NFR-L10N-2); `Accounts/` holds the sign-up view model and the `IMemberAccounts` interface |
 | `src/FitCore.Client.Auth/` | Supabase Auth for the device apps: `Supabase.Gotrue` behind a thin wrapper, called with the project's publishable key. Only `FitCore.Maui` references it; the browser never gets it (ADR 0005) |
 | `src/FitCore.AppHost/` | .NET Aspire AppHost for local development: starts the Supabase CLI stack, then `fitcore-app` and `fitcore-worker`. Never deployed |
 | `src/FitCore.Platform/` | Cross-cutting server code: the `IModule` host, the database unit of work (`Data/`, the only way to run SQL as a caller), and member authentication (`Auth/`: the Supabase Auth client, token validation, the session cookie and the cross-site write checks of ADR 0005). Rate limits and redacted logging come later |
@@ -32,7 +32,7 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `src/FitCore.Maui/` | The .NET MAUI XAML app for Android, iOS, macOS and Windows: the shell and email sign-up so far. The Supabase URL and publishable key are build properties that default to the local stack |
 | `src/FitCore.Worker/` | `fitcore-worker`: background host |
 | `src/Modules/` | One project per module in ADR 0003, each with a `<Name>Module` entry point. `Modules.targets` and `ModuleCatalog.cs` load every module into both hosts |
-| `tests/FitCore.Architecture.Tests/` | Module boundaries and project layering (NFR-MNT-4), including that browser code never reaches `Supabase.Gotrue` |
+| `tests/FitCore.Architecture.Tests/` | Module boundaries and project layering (NFR-MNT-4), including that browser code never reaches `Supabase.Gotrue`, and no hard-coded text in Razor, XAML or validation messages (NFR-L10N-2) |
 | `tests/FitCore.Client.Tests/` | The sign-up view model, and `FitCore.Client.Auth` against the local Supabase stack with the publishable key: the profile, the 18+ gate, Auth's own refusals and the confirmation email |
 | `tests/FitCore.Domain.Tests/` | Table tests for every BRD §6 rule in `FitCore.Domain`, with a 90% line-coverage gate (NFR-MNT-1) |
 | `tests/coverage-gate.py` | Fails CI when a package's line coverage in a Cobertura report is below a minimum |
@@ -40,7 +40,7 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `tests/FitCore.Platform.Tests/` | The unit of work against the local Supabase database: no identity fails with 42501, RLS applies to the caller, and no identity outlives its transaction |
 | `tests/FitCore.Modules.<Name>.Tests/` | A module's schema and code against the local Supabase stack, through the real unit of work. `FitCore.Modules.Identity.Tests` drives sign-up, the 18+ gate, sign-in and sign-out through fitcore-app against the local Auth and its mail catcher |
 | `tests/FitCore.Web.Tests/` | The web host's pipeline, in memory: API errors as problem details, `no-store` pages, prerendering, and the web session against a fake Supabase Auth (cookie, refresh, outages, cross-site writes, sign-out) |
-| `Directory.Build.props`, `Directory.Packages.props` | Shared build settings (warnings are errors) and central package versions. `spikes/` opts out of both |
+| `Directory.Build.props`, `Directory.Build.targets`, `Directory.Packages.props` | Shared build settings (warnings are errors), the generated class for each `Resources/*.resx`, and central package versions. `spikes/` opts out of all three |
 | `.github/workflows/ci.yml` | CI: Markdown lint, link check, solution format check, build (with the MAUI app for Android) and test (against a local Supabase database), pgTAP, and spike build |
 | `.github/skills/code-review/SKILL.md` | GitHub Copilot code-review skill: checklists drawn from the BRD, NFRs, ADRs and spike rules. Update it when those rules change. It is also the checklist for the Claude Code and Codex skills below |
 | `.claude/skills/fitcore-review/SKILL.md` | Claude Code review skill (`/fitcore-review`): runs the Copilot skill's checklist with local checks and verified findings |
@@ -108,8 +108,9 @@ dotnet build spikes/blazor-web-vitals/BlazorSpike
 - **A new module** needs an ADR change first, then a project under `src/Modules/` and an entry in `ModuleCatalog.cs`. Its schema is its name in snake case.
 - **Client projects** (`FitCore.Domain`, `FitCore.Contracts`, `FitCore.Client.Core`, `FitCore.Client.Auth`, `FitCore.Web.Client`, `FitCore.Maui`) never reference modules, `FitCore.Platform`, the hosts or Npgsql.
 - **`Supabase.Gotrue`** lives only in `FitCore.Client.Auth`, which only `FitCore.Maui` references. Nothing the Blazor client is built from may reach either (ADR 0005).
-- **Device app strings** live in resource files such as `AccountStrings.resx` (NFR-L10N-2), and XAML binds with `x:DataType`.
+- **Device app XAML** binds with `x:DataType`, and takes its text from the same resource classes with `x:Static`.
 - **Package versions** go in `Directory.Packages.props`, never in a project file.
+- **User-visible text** goes in a project's `Resources/*.resx`, never in Razor markup, XAML, C# or validation attributes (NFR-L10N-2). Text both UIs show lives in `FitCore.Client.Core/Resources`; use the generated class (`AccountStrings.SignInButton`, or `{x:Static strings:AccountStrings.SignUpTitle}` in XAML), `ErrorMessageResourceType` on validation attributes, and `LinkedText` for a sentence with a link in it. An architecture test fails on text written into Razor or XAML.
 - **Database access** goes through `FitCoreDatabase` in `FitCore.Platform`: a `UnitOfWork` for writes and multi-statement reads, `ReadAsync` for single-trip reads. Never set the role or claims yourself; an architecture test fails on any session-level `SET ROLE` or `set_config(…, false)` under `src/` or `supabase/`.
 
 When code is added, keep this file's layout and commands current, and extend CI to run any new checks.
