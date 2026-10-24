@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The device app's account journey on Android: sign up, sign in, a restart, and sign out, through the real UI on an
+    emulator, against the local Supabase stack (implementation plan PR 4). Appium drives the app; run-on-emulator.sh
+    starts it in CI. Without FITCORE_ANDROID_APK the tests are skipped, so `dotnet test` on the solution still runs
+    everywhere.
+  -->
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Appium.WebDriver" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FitCore.Testing\FitCore.Testing.csproj" />
+  </ItemGroup>
+
+</Project>

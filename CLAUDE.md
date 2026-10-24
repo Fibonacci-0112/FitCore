@@ -6,7 +6,7 @@ Guidance for Claude Code in this repository. Read the BRD and the NFRs before an
 
 FitCore is a health, fitness and nutrition app. Members plan targets and track nutrition (including estimated food cost), training, body metrics and wellness, with optional support from a coach or clinician. It's multi-user from day one, and every member's data is private by default.
 
-The repository holds the requirements and architecture documents, throwaway spike code under `spikes/`, and the start of the application: the solution scaffold from [`architecture-options.md` §B.2](docs/architecture-options.md#b2-project-structure-and-boundaries). The projects build and the tests run. `FitCore.Domain` holds the BRD §6 rules, `supabase/` holds the R1 tables with their RLS policies, audit triggers and pgTAP tests, and `FitCore.Platform` holds the unit of work and member authentication. The first feature is email sign-up, sign-in and sign-out on the web, with the 18+ gate (R1 PR 4, first part), the MAUI app's shell with email sign-up (second part), and email sign-in and sign-out in the MAUI app, with the session in the platform secure store (third part).
+The repository holds the requirements and architecture documents, throwaway spike code under `spikes/`, and the start of the application: the solution scaffold from [`architecture-options.md` §B.2](docs/architecture-options.md#b2-project-structure-and-boundaries). The projects build and the tests run. `FitCore.Domain` holds the BRD §6 rules, `supabase/` holds the R1 tables with their RLS policies, audit triggers and pgTAP tests, and `FitCore.Platform` holds the unit of work and member authentication. The first feature is email sign-up, sign-in and sign-out on the web, with the 18+ gate (R1 PR 4, first part), the MAUI app's shell with email sign-up (second part), email sign-in and sign-out in the MAUI app, with the session in the platform secure store (third part), and the Android app's account journey on an emulator in CI (fourth part).
 
 | Path | Contents |
 |---|---|
@@ -34,6 +34,7 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `src/Modules/` | One project per module in ADR 0003, each with a `<Name>Module` entry point. `Modules.targets` and `ModuleCatalog.cs` load every module into both hosts |
 | `tests/FitCore.Architecture.Tests/` | Module boundaries and project layering (NFR-MNT-4), including that browser code never reaches `Supabase.Gotrue`, and no hard-coded text in Razor, XAML or validation messages (NFR-L10N-2) |
 | `tests/FitCore.Client.Tests/` | The sign-up, sign-in and home view models and `DeviceSession` (restore, refresh, sign-out), and `FitCore.Client.Auth` against the local Supabase stack with the publishable key: the profile, the 18+ gate, Auth's own refusals, the confirmation email, sign-in, refresh, and sign-out revoking the refresh token |
+| `tests/FitCore.Maui.UITests/` | The device app's account journey on Android through its own screens, with Appium: sign up, sign in, a restart that keeps the session, and sign out. `run-on-emulator.sh` runs it on a booted emulator; without `FITCORE_ANDROID_APK` the test is skipped |
 | `tests/FitCore.Domain.Tests/` | Table tests for every BRD §6 rule in `FitCore.Domain`, with a 90% line-coverage gate (NFR-MNT-1) |
 | `tests/coverage-gate.py` | Fails CI when a package's line coverage in a Cobertura report is below a minimum |
 | `tests/FitCore.Testing/` | Shared fixture for the database test projects: the local Supabase database, the API's `FitCoreDatabase`, and test members that are deleted afterwards |
@@ -41,7 +42,7 @@ The repository holds the requirements and architecture documents, throwaway spik
 | `tests/FitCore.Modules.<Name>.Tests/` | A module's schema and code against the local Supabase stack, through the real unit of work. `FitCore.Modules.Identity.Tests` drives sign-up, the 18+ gate, sign-in and sign-out through fitcore-app against the local Auth and its mail catcher |
 | `tests/FitCore.Web.Tests/` | The web host's pipeline, in memory: API errors as problem details, `no-store` pages, prerendering, and the web session against a fake Supabase Auth (cookie, refresh, outages, cross-site writes, sign-out) |
 | `Directory.Build.props`, `Directory.Build.targets`, `Directory.Packages.props` | Shared build settings (warnings are errors), the generated class for each `Resources/*.resx`, and central package versions. `spikes/` opts out of all three |
-| `.github/workflows/ci.yml` | CI: Markdown lint, link check, solution format check, build (with the MAUI app for Android) and test (against a local Supabase database), pgTAP, and spike build |
+| `.github/workflows/ci.yml` | CI: Markdown lint, link check, solution format check, build (with the MAUI app for Android) and test (against a local Supabase database), the Android app on an emulator, pgTAP, and spike build |
 | `.github/skills/code-review/SKILL.md` | GitHub Copilot code-review skill: checklists drawn from the BRD, NFRs, ADRs and spike rules. Update it when those rules change. It is also the checklist for the Claude Code and Codex skills below |
 | `.claude/skills/fitcore-review/SKILL.md` | Claude Code review skill (`/fitcore-review`): runs the Copilot skill's checklist with local checks and verified findings |
 | `.agents/skills/fitcore-review/SKILL.md` | Codex review skill (`$fitcore-review`): the same runner for Codex |
@@ -77,6 +78,9 @@ python3 tests/coverage-gate.py TestResults/domain.cobertura.xml FitCore.Domain 9
 dotnet run --project src/FitCore.Web             # the web app and API, https://localhost:7180
 dotnet run --project src/FitCore.AppHost         # or everything: the Supabase stack, the app and the worker
 dotnet build src/FitCore.Maui -t:Run -f net10.0-android   # the device app on a running emulator, against the local stack
+npm install --global appium@3.8.0 && appium driver install uiautomator2@8.7.0   # once, for the Android UI test (Node 20.19+ or 22.12+)
+dotnet build src/FitCore.Maui -f net10.0-android -p:RuntimeIdentifier=android-x64 -p:EmbedAssembliesIntoApk=true -o artifacts/apk
+FITCORE_ANDROID_APK=artifacts/apk/app.fitcore-Signed.apk tests/FitCore.Maui.UITests/run-on-emulator.sh   # on a booted x86_64 emulator
 ```
 
 Debug builds of `FitCore.Maui` sign members in against the local stack. Any other configuration, including a Release build of the solution, must pass `-p:SupabaseUrl=…` and `-p:SupabasePublishableKey=…`, or the build fails, and a non-Debug app refuses to start unless the URL is HTTPS (NFR-SEC-6). Never pass a secret key to a client build.

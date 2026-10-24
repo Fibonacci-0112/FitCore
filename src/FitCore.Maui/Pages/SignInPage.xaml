@@ -15,7 +15,8 @@
             <Label Text="{x:Static strings:AccountStrings.SignInHeading}" Style="{StaticResource Headline}" />
 
             <Label Text="{x:Static strings:AccountStrings.EmailLabel}" Margin="0,16,0,0" />
-            <Entry Text="{Binding Email}"
+            <Entry AutomationId="SignInEmail"
+                   Text="{Binding Email}"
                    MaxLength="254"
                    Keyboard="Email"
                    IsSpellCheckEnabled="False"
@@ -23,26 +24,30 @@
                    SemanticProperties.Description="{x:Static strings:AccountStrings.EmailLabel}" />
 
             <Label Text="{x:Static strings:AccountStrings.PasswordLabel}" Margin="0,8,0,0" />
-            <Entry Text="{Binding Password}"
+            <Entry AutomationId="SignInPassword"
+                   Text="{Binding Password}"
                    IsPassword="True"
                    IsSpellCheckEnabled="False"
                    IsTextPredictionEnabled="False"
                    ReturnCommand="{Binding SignInCommand}"
                    SemanticProperties.Description="{x:Static strings:AccountStrings.PasswordLabel}" />
 
-            <Label Text="{Binding Error}"
+            <Label AutomationId="SignInError"
+                   Text="{Binding Error}"
                    IsVisible="{Binding HasError}"
                    Style="{StaticResource Error}"
                    Margin="0,8,0,0" />
 
-            <Button Text="{x:Static strings:AccountStrings.SignInButton}"
+            <Button AutomationId="SignInButton"
+                    Text="{x:Static strings:AccountStrings.SignInButton}"
                     Command="{Binding SignInCommand}"
                     Margin="0,16,0,0" />
             <ActivityIndicator IsRunning="{Binding IsBusy}"
                                IsVisible="{Binding IsBusy}"
                                SemanticProperties.Description="{x:Static strings:AccountStrings.SigningIn}" />
 
-            <Button Text="{x:Static strings:AccountStrings.CreateAccountLink}"
+            <Button AutomationId="CreateAccountLink"
+                    Text="{x:Static strings:AccountStrings.CreateAccountLink}"
                     Style="{StaticResource Secondary}"
                     Clicked="OnCreateAccountClicked"
                     Margin="0,24,0,0" />
