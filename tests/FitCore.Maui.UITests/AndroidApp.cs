@@ -131,12 +131,37 @@ public sealed class AndroidApp : IAsyncLifetime
     {
         WaitFor(automationId).Click();
 
-        // The dialog opens on the calendar; the year in its header opens the list of years.
+        // The dialog opens on the calendar; the year in its header opens the list of years, on this year.
         WaitForAndroid("android:id/date_picker_header_year").Click();
-        Driver.FindElement(MobileBy.AndroidUIAutomator(
-            "new UiScrollable(new UiSelector().resourceId(\"android:id/date_picker_year_picker\"))" +
-            $".scrollIntoView(new UiSelector().text(\"{year}\"))")).Click();
-        WaitForAndroid("android:id/button1").Click();
+
+        // Earlier years are above, so scroll the list (the dialog's only scrolling view) up until the year shows.
+        var wanted = MobileBy.AndroidUIAutomator($"new UiSelector().text(\"{year}\")");
+        var list = MobileBy.AndroidUIAutomator("new UiSelector().scrollable(true)");
+        for (var step = 0; step < 60; step++)
+        {
+            if (Driver.FindElements(wanted) is [var item, ..])
+            {
+                item.Click();
+                WaitForAndroid("android:id/button1").Click();
+                return;
+            }
+
+            if (Driver.FindElements(list) is not [var years, ..])
+            {
+                Thread.Sleep(500);
+                continue;
+            }
+
+            Driver.ExecuteScript("mobile: scrollGesture", new Dictionary<string, object>
+            {
+                ["elementId"] = years.Id,
+                ["direction"] = "up",
+                ["percent"] = 0.75,
+            });
+        }
+
+        SaveScreen("year-" + year);
+        throw new TimeoutException($"The date picker never showed {year}.");
     }
 
     private AppiumElement WaitForAndroid(string resourceId)
