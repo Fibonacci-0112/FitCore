@@ -27,4 +27,6 @@ public partial class SignUpPage : ContentPage
             SemanticScreenReader.Announce(AccountStrings.CheckEmailTitle + ". " + AccountStrings.CheckEmailBody);
         }
     }
+
+    private async void OnSignInClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(AppShell.SignInRoute);
 }

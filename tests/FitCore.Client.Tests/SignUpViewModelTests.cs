@@ -3,13 +3,22 @@ using FitCore.Client.Core.Accounts;
 namespace FitCore.Client.Tests;
 
 /// <summary>The device apps' sign-up form: the web form's rules and messages, the 18+ gate on the member's local date, and the busy state.</summary>
-public sealed class SignUpViewModelTests
+public sealed class SignUpViewModelTests : IDisposable
 {
     // 03:00 UTC on 16 October is still 15 October in Chicago.
     private static readonly DateTimeOffset Now = new(2026, 10, 16, 3, 0, 0, TimeSpan.Zero);
     private static readonly TimeZoneInfo Chicago = TimeZoneInfo.FindSystemTimeZoneById("America/Chicago");
 
     private readonly FakeAccounts _accounts = new();
+    private readonly ScriptedAccounts _auth = new();
+    private readonly DeviceSession _session;
+
+    public SignUpViewModelTests()
+    {
+        _session = new DeviceSession(_auth, new MemoryStore(), new SettableTime());
+    }
+
+    public void Dispose() => _session.Dispose();
 
     [Fact]
     public async Task Valid_details_sign_up_and_show_the_check_email_message()
@@ -141,6 +150,23 @@ public sealed class SignUpViewModelTests
     }
 
     [Fact]
+    public async Task Signing_out_clears_what_the_last_person_typed_into_the_sign_up_form()
+    {
+        var viewModel = Filled();
+        await viewModel.SignUpCommand.ExecuteAsync(null);
+        await _session.SignInAsync("ada@example.test", "correct horse battery staple", TestContext.Current.CancellationToken);
+
+        await _session.SignOutAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal("", viewModel.DisplayName);
+        Assert.Equal("", viewModel.Email);
+        Assert.Equal("", viewModel.Password);
+        Assert.Null(viewModel.BirthDate);
+        Assert.Null(viewModel.Error);
+        Assert.True(viewModel.IsFormVisible);
+    }
+
+    [Fact]
     public void A_sign_up_request_never_prints_its_password()
     {
         var request = new SignUpRequest("ada@example.test", "correct horse battery staple", "Ada", new DateOnly(1990, 4, 1), "UTC");
@@ -152,7 +178,7 @@ public sealed class SignUpViewModelTests
     {
         SignUpViewModel? viewModel = null;
         _accounts.Observe = () => viewModel!.IsBusy;
-        viewModel = new SignUpViewModel(_accounts, new FixedTime(Now, zone ?? Chicago))
+        viewModel = new SignUpViewModel(_accounts, _session, new FixedTime(Now, zone ?? Chicago))
         {
             DisplayName = "Ada Member",
             Email = "ada@example.test",
@@ -178,6 +204,12 @@ public sealed class SignUpViewModelTests
             BusyDuringCalls.Add(Observe());
             return Task.FromResult(Status);
         }
+
+        public Task<SignInResult> SignInAsync(string email, string password, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<RefreshResult> RefreshAsync(MemberSession session, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<SignOutStatus> SignOutAsync(MemberSession session, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 
     private sealed class FixedTime(DateTimeOffset now, TimeZoneInfo zone) : TimeProvider

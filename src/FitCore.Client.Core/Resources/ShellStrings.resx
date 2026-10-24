@@ -31,4 +31,8 @@
     <value>Plan your targets and track what you eat. {0} to start.</value>
     <comment>{0} is a link whose text is AccountStrings.CreateAccountLink.</comment>
   </data>
+  <data name="Starting" xml:space="preserve">
+    <value>Opening FitCore</value>
+    <comment>Screen-reader name of the busy indicator while the device app checks for a saved session at launch.</comment>
+  </data>
 </root>

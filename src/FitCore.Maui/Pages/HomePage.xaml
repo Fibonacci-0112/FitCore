@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- The signed-in home screen. Only sign-out so far; the R1 screens join it as their PRs land. -->
+<ContentPage x:Class="FitCore.Maui.Pages.HomePage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:accounts="clr-namespace:FitCore.Client.Core.Accounts;assembly=FitCore.Client.Core"
+             xmlns:strings="clr-namespace:FitCore.Client.Core.Resources;assembly=FitCore.Client.Core"
+             x:DataType="accounts:HomeViewModel"
+             Title="{x:Static strings:ShellStrings.AppName}"
+             Shell.NavBarIsVisible="False">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16,32" Spacing="8" MaximumWidthRequest="560">
+            <Label Text="{x:Static strings:ShellStrings.AppName}" Style="{StaticResource Headline}" />
+            <Label Text="{x:Static strings:ShellStrings.HomeSignedIn}" Margin="0,16,0,0" />
+
+            <Label Text="{Binding Error}"
+                   IsVisible="{Binding HasError}"
+                   Style="{StaticResource Error}"
+                   Margin="0,8,0,0" />
+
+            <Button Text="{x:Static strings:AccountStrings.SignOutButton}"
+                    Command="{Binding SignOutCommand}"
+                    Style="{StaticResource Secondary}"
+                    Margin="0,24,0,0" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}"
+                               SemanticProperties.Description="{x:Static strings:AccountStrings.SigningOut}" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
