@@ -5,6 +5,7 @@
 @inject MemberSessions Sessions
 @inject NavigationManager Navigation
 @inject TimeProvider Time
+@inject SignInLimits Limits
 
 <PageTitle>@TextFormat.PageTitle(AccountStrings.SignUpTitle)</PageTitle>
 
@@ -65,6 +66,12 @@
         if (!LocalCalendar.IsOldEnough(birthDate, LocalCalendar.DateAt(Time.GetUtcNow(), zone)))
         {
             error = AccountStrings.TooYoung;
+            return;
+        }
+
+        if (await Limits.CheckAttemptAsync(HttpContext.Connection.RemoteIpAddress) is { } busy)
+        {
+            error = AccountText.Refuse(HttpContext, busy, AccountStrings.RateLimited);
             return;
         }
 

@@ -2,6 +2,7 @@
 @attribute [ExcludeFromInteractiveRouting]
 @inject MemberAuth Auth
 @inject MemberSessions Sessions
+@inject SignInLimits Limits
 @inject NavigationManager Navigation
 
 <PageTitle>@TextFormat.PageTitle(AccountStrings.SignInHeading)</PageTitle>
@@ -48,13 +49,35 @@
     private async Task SignInAsync()
     {
         var input = Input!;
-        var outcome = await Auth.SignInWithPasswordAsync(
-            input.Email!.Trim(), input.Password!, HttpContext.Connection.RemoteIpAddress, HttpContext.RequestAborted);
+        var email = input.Email!.Trim();
+        var ip = HttpContext.Connection.RemoteIpAddress;
+
+        // Refused before Supabase Auth is asked, so a locked-out address can't be tried at all (NFR-SEC-4).
+        if (await Limits.CheckAttemptAsync(ip) is { } busy)
+        {
+            error = AccountText.Refuse(HttpContext, busy, AccountStrings.RateLimited);
+            return;
+        }
+
+        if (await Limits.LockedForAsync(email) is { } locked)
+        {
+            error = AccountText.Refuse(HttpContext, locked, AccountStrings.SignInLocked);
+            return;
+        }
+
+        var outcome = await Auth.SignInWithPasswordAsync(email, input.Password!, ip, HttpContext.RequestAborted);
 
         if (outcome.Status == AuthStatus.SignedIn)
         {
+            await Limits.RecordSuccessAsync(email);
             Sessions.Start(HttpContext, outcome.Session!);
             Navigation.NavigateTo(AccountText.LocalOrHome(ReturnUrl), forceLoad: true);
+            return;
+        }
+
+        if (outcome.Status == AuthStatus.InvalidCredentials && await Limits.RecordFailureAsync(email) is { } lockout)
+        {
+            error = AccountText.Refuse(HttpContext, lockout, AccountStrings.SignInLocked);
             return;
         }
 

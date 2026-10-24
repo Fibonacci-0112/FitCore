@@ -3,6 +3,7 @@ using FitCore.Modules;
 using FitCore.Platform.Auth;
 using FitCore.Platform.Data;
 using FitCore.Platform.Http;
+using FitCore.Platform.Limits;
 using FitCore.Platform.Modules;
 using FitCore.Web.Components;
 using Microsoft.AspNetCore.Antiforgery;
@@ -16,6 +17,7 @@ builder.Services.AddRazorComponents()
     .AddAuthenticationStateSerialization();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddFitCoreAuthentication(builder.Configuration, ApiRoutes.V1);
+builder.Services.AddFitCoreLimits(builder.Configuration, builder.Environment);
 builder.Services.AddHealthChecks();
 builder.Services.AddProblemDetails();
 builder.Services.AddFitCoreDatabase(builder.Configuration);

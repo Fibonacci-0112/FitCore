@@ -16,10 +16,15 @@ const string database = "Host=127.0.0.1;Port=54322;Database=postgres;Username=fi
 const string supabaseUrl = "http://127.0.0.1:54321";
 var supabaseSecretKey = builder.AddParameter("supabase-secret-key", secret: true);
 
+// The shared rate-limit counters (ADR 0005 decision 9). fitcore-app gets ConnectionStrings__valkey from the reference.
+var valkey = builder.AddValkey("valkey");
+
 builder.AddProject<Projects.FitCore_Web>("fitcore-app")
     .WithEnvironment("ConnectionStrings__Fitcore", database)
     .WithEnvironment("Supabase__Url", supabaseUrl)
     .WithEnvironment("Supabase__SecretKey", supabaseSecretKey)
+    .WithReference(valkey)
+    .WaitFor(valkey)
     .WaitForCompletion(supabase);
 
 builder.AddProject<Projects.FitCore_Worker>("fitcore-worker")

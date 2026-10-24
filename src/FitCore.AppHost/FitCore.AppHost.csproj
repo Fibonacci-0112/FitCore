@@ -1,6 +1,6 @@
 <Project Sdk="Aspire.AppHost.Sdk/13.6.1">
 
-  <!-- Local development only (implementation plan §3.7): starts the Supabase CLI stack, then the web host and the worker. Never deployed. -->
+  <!-- Local development only (implementation plan §3.7): starts the Supabase CLI stack and Valkey, then the web host and the worker. Never deployed. -->
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -13,6 +13,10 @@
   <ItemGroup>
     <!-- Pins the Aspire SDK's transitive MessagePack to a patched version (Directory.Packages.props). -->
     <PackageReference Include="MessagePack" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Valkey" />
   </ItemGroup>
 
   <ItemGroup>
