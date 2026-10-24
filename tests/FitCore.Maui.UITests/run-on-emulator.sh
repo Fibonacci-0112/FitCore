@@ -10,6 +10,11 @@
 set -euo pipefail
 
 : "${FITCORE_ANDROID_APK:?Set FITCORE_ANDROID_APK to the APK to test.}"
+[[ -f "$FITCORE_ANDROID_APK" ]] || { echo "No APK at $FITCORE_ANDROID_APK" >&2; exit 1; }
+
+# Absolute, since dotnet test runs the tests from their bin directory, not from here.
+FITCORE_ANDROID_APK="$(realpath "$FITCORE_ANDROID_APK")"
+export FITCORE_ANDROID_APK
 export FITCORE_UITEST_ARTIFACTS="${FITCORE_UITEST_ARTIFACTS:-$PWD/TestResults/android}"
 mkdir -p "$FITCORE_UITEST_ARTIFACTS"
 
