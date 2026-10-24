@@ -47,9 +47,6 @@ public sealed class AndroidApp : IAsyncLifetime
             App = Path.GetFullPath(apk),
         };
 
-        // A keyboard that never shows, so no field or button sits behind it.
-        options.AddAdditionalAppiumOption("appium:hideKeyboard", true);
-
         // The emulator on a CI runner is slow to install and start the app the first time.
         options.AddAdditionalAppiumOption("appium:uiautomator2ServerInstallTimeout", 120_000);
         options.AddAdditionalAppiumOption("appium:adbExecTimeout", 120_000);
@@ -121,6 +118,13 @@ public sealed class AndroidApp : IAsyncLifetime
         var field = WaitFor(automationId);
         field.Clear();
         field.SendKeys(text);
+
+        // Out of the way, so no field or button below sits behind it. (Appium's hideKeyboard option, which swaps in
+        // an invisible keyboard, races its own install on a fresh emulator.)
+        if (Driver.IsKeyboardShown())
+        {
+            Driver.HideKeyboard();
+        }
     }
 
     /// <summary>
