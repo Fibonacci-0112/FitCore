@@ -87,6 +87,23 @@ public sealed class SignInViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task Signing_out_clears_the_sign_in_form_for_the_next_person()
+    {
+        _accounts.SignIn = new(SignInStatus.InvalidCredentials);
+        var viewModel = Filled();
+        await viewModel.SignInCommand.ExecuteAsync(null);
+        _accounts.SignIn = new(SignInStatus.SignedIn, SessionFakes.Session("first"));
+        await _session.SignInAsync("ada@example.test", "correct horse battery staple", TestContext.Current.CancellationToken);
+        viewModel.Email = "ada@example.test";
+
+        await _session.SignOutAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal("", viewModel.Email);
+        Assert.Equal("", viewModel.Password);
+        Assert.Null(viewModel.Error);
+    }
+
+    [Fact]
     public async Task Signing_out_from_home_ends_the_session()
     {
         await _session.SignInAsync("ada@example.test", "correct horse battery staple", TestContext.Current.CancellationToken);

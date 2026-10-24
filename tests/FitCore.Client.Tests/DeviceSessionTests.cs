@@ -154,11 +154,58 @@ public sealed class DeviceSessionTests : IDisposable
     {
         await _session.SignInAsync("ada@example.test", "correct horse battery staple", Cancel);
         _accounts.Refresh = new(RefreshStatus.Refreshed, SessionFakes.Session("refreshed", TimeSpan.FromHours(1)));
+        var held = new TaskCompletionSource();
+        _accounts.RefreshHeld = held.Task;
         _time.Now += TimeSpan.FromMinutes(14.5);
 
-        var tokens = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => _session.GetAccessTokenAsync(Cancel)));
+        // All five start while the first refresh is still in flight.
+        var callers = Enumerable.Range(0, 5).Select(_ => _session.GetAccessTokenAsync(Cancel)).ToList();
+        Assert.Single(_accounts.Refreshes);
+        Assert.All(callers, caller => Assert.False(caller.IsCompleted));
+
+        held.SetResult();
+        var tokens = await Task.WhenAll(callers);
 
         Assert.All(tokens, token => Assert.Equal("access-refreshed", token));
+        Assert.Single(_accounts.Refreshes);
+    }
+
+    [Fact]
+    public async Task Parallel_callers_that_find_the_session_ended_report_it_once()
+    {
+        await _session.SignInAsync("ada@example.test", "correct horse battery staple", Cancel);
+        _accounts.Refresh = new(RefreshStatus.SessionEnded);
+        var held = new TaskCompletionSource();
+        _accounts.RefreshHeld = held.Task;
+        _time.Now += TimeSpan.FromMinutes(20);
+
+        var callers = Enumerable.Range(0, 5).Select(_ => _session.GetAccessTokenAsync(Cancel)).ToList();
+        held.SetResult();
+        await Task.WhenAll(callers);
+
+        // One for the sign-in, one for the end.
+        Assert.Equal(2, _changes);
+    }
+
+    [Fact]
+    public async Task A_caller_who_cancels_mid_refresh_doesnt_lose_the_rotated_session()
+    {
+        await _session.SignInAsync("ada@example.test", "correct horse battery staple", Cancel);
+        _accounts.Refresh = new(RefreshStatus.Refreshed, SessionFakes.Session("refreshed", TimeSpan.FromHours(1)));
+        var held = new TaskCompletionSource();
+        _accounts.RefreshHeld = held.Task;
+        _time.Now += TimeSpan.FromMinutes(14.5);
+        using var leaving = new CancellationTokenSource();
+
+        var caller = _session.GetAccessTokenAsync(leaving.Token);
+        leaving.Cancel();
+        held.SetResult();
+        await caller;
+
+        // The refresh wasn't tied to the caller, and its result was kept for the next one.
+        Assert.False(Assert.Single(_accounts.RefreshTokens).CanBeCanceled);
+        Assert.Equal(SessionFakes.Session("refreshed", TimeSpan.FromHours(1)), _store.Saved);
+        Assert.Equal("access-refreshed", await _session.GetAccessTokenAsync(Cancel));
         Assert.Single(_accounts.Refreshes);
     }
 

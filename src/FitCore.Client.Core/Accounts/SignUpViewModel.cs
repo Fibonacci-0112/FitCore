@@ -8,7 +8,9 @@ namespace FitCore.Client.Core.Accounts;
 
 /// <summary>
 /// Email sign-up on the device apps (implementation plan PR 4), with the same rules and messages as the web's form.
-/// The 18+ check here is for a clear message; the database refuses an under-18 birth date whatever the app sends.
+/// The 18+ check here is for a clear message; the database refuses an under-18 birth date whatever the app sends. The
+/// form is cleared whenever someone signs in or out, so the next person on the device sees nothing of the last one's
+/// (PR 4 acceptance).
 /// </summary>
 public sealed partial class SignUpViewModel : ObservableObject
 {
@@ -24,10 +26,11 @@ public sealed partial class SignUpViewModel : ObservableObject
     private readonly IMemberAccounts _accounts;
     private readonly TimeProvider _time;
 
-    public SignUpViewModel(IMemberAccounts accounts, TimeProvider time)
+    public SignUpViewModel(IMemberAccounts accounts, DeviceSession session, TimeProvider time)
     {
         _accounts = accounts;
         _time = time;
+        session.SignedInChanged += (_, _) => Clear();
     }
 
     [ObservableProperty]
@@ -110,6 +113,16 @@ public sealed partial class SignUpViewModel : ObservableObject
     [RelayCommand]
     private void SignUpAgain()
     {
+        Error = null;
+        IsConfirmationSent = false;
+    }
+
+    private void Clear()
+    {
+        DisplayName = "";
+        Email = "";
+        Password = "";
+        BirthDate = null;
         Error = null;
         IsConfirmationSent = false;
     }

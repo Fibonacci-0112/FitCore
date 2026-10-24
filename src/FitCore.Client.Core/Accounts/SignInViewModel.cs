@@ -7,7 +7,8 @@ namespace FitCore.Client.Core.Accounts;
 
 /// <summary>
 /// Email sign-in on the device apps (implementation plan PR 4), with the web form's rules and messages. A sign-in
-/// that works raises <see cref="DeviceSession.SignedInChanged"/>, and the app moves on from there.
+/// that works raises <see cref="DeviceSession.SignedInChanged"/>, and the app moves on from there. The form is cleared
+/// whenever someone signs in or out, so the next person on the device sees nothing of the last one's (PR 4 acceptance).
 /// </summary>
 public sealed partial class SignInViewModel : ObservableObject
 {
@@ -20,6 +21,7 @@ public sealed partial class SignInViewModel : ObservableObject
     public SignInViewModel(DeviceSession session)
     {
         _session = session;
+        _session.SignedInChanged += (_, _) => Clear();
     }
 
     [ObservableProperty]
@@ -75,6 +77,13 @@ public sealed partial class SignInViewModel : ObservableObject
         {
             IsBusy = false;
         }
+    }
+
+    private void Clear()
+    {
+        Email = "";
+        Password = "";
+        Error = null;
     }
 
     private string? Validate()

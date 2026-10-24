@@ -11,6 +11,12 @@ internal sealed class ScriptedAccounts : IMemberAccounts
 
     public SignOutStatus SignOut { get; set; } = SignOutStatus.SessionEnded;
 
+    /// <summary>When set, a refresh waits for this to finish before it answers, so a test can hold one in flight.</summary>
+    public Task? RefreshHeld { get; set; }
+
+    /// <summary>The cancellation token each refresh was given.</summary>
+    public List<CancellationToken> RefreshTokens { get; } = [];
+
     /// <summary>Read while each call runs, such as a view model's busy flag.</summary>
     public Func<bool> Observe { get; set; } = () => false;
 
@@ -31,10 +37,16 @@ internal sealed class ScriptedAccounts : IMemberAccounts
         return Task.FromResult(SignIn);
     }
 
-    public Task<RefreshResult> RefreshAsync(MemberSession session, CancellationToken cancellationToken = default)
+    public async Task<RefreshResult> RefreshAsync(MemberSession session, CancellationToken cancellationToken = default)
     {
         Refreshes.Add(session);
-        return Task.FromResult(Refresh);
+        RefreshTokens.Add(cancellationToken);
+        if (RefreshHeld is not null)
+        {
+            await RefreshHeld;
+        }
+
+        return Refresh;
     }
 
     public Task<SignOutStatus> SignOutAsync(MemberSession session, CancellationToken cancellationToken = default)
