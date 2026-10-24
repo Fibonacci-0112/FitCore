@@ -17,14 +17,16 @@
                 <Label Text="{x:Static strings:AccountStrings.SignUpTitle}" Style="{StaticResource Headline}" />
 
                 <Label Text="{x:Static strings:AccountStrings.NameLabel}" Margin="0,16,0,0" />
-                <Entry Text="{Binding DisplayName}"
+                <Entry AutomationId="SignUpName"
+                       Text="{Binding DisplayName}"
                        MaxLength="80"
                        Keyboard="Text"
                        IsTextPredictionEnabled="False"
                        SemanticProperties.Description="{x:Static strings:AccountStrings.NameLabel}" />
 
                 <Label Text="{x:Static strings:AccountStrings.EmailLabel}" Margin="0,8,0,0" />
-                <Entry Text="{Binding Email}"
+                <Entry AutomationId="SignUpEmail"
+                       Text="{Binding Email}"
                        MaxLength="254"
                        Keyboard="Email"
                        IsSpellCheckEnabled="False"
@@ -32,7 +34,8 @@
                        SemanticProperties.Description="{x:Static strings:AccountStrings.EmailLabel}" />
 
                 <Label Text="{x:Static strings:AccountStrings.PasswordLabel}" Margin="0,8,0,0" />
-                <Entry Text="{Binding Password}"
+                <Entry AutomationId="SignUpPassword"
+                       Text="{Binding Password}"
                        MaxLength="64"
                        IsPassword="True"
                        IsSpellCheckEnabled="False"
@@ -42,18 +45,21 @@
                 <Label Text="{x:Static strings:AccountStrings.PasswordHelp}" Style="{StaticResource Help}" />
 
                 <Label Text="{x:Static strings:AccountStrings.BirthDateLabel}" Margin="0,8,0,0" />
-                <DatePicker Date="{Binding BirthDate}"
+                <DatePicker AutomationId="SignUpBirthDate"
+                            Date="{Binding BirthDate}"
                             MaximumDate="{Binding Today}"
                             SemanticProperties.Description="{x:Static strings:AccountStrings.BirthDateLabel}"
                             SemanticProperties.Hint="{x:Static strings:AccountStrings.BirthDateHelp}" />
                 <Label Text="{x:Static strings:AccountStrings.BirthDateHelp}" Style="{StaticResource Help}" />
 
-                <Label Text="{Binding Error}"
+                <Label AutomationId="SignUpError"
+                       Text="{Binding Error}"
                        IsVisible="{Binding HasError}"
                        Style="{StaticResource Error}"
                        Margin="0,8,0,0" />
 
-                <Button Text="{x:Static strings:AccountStrings.CreateAccount}"
+                <Button AutomationId="CreateAccountButton"
+                        Text="{x:Static strings:AccountStrings.CreateAccount}"
                         Command="{Binding SignUpCommand}"
                         Margin="0,16,0,0" />
                 <ActivityIndicator IsRunning="{Binding IsBusy}"
@@ -62,7 +68,8 @@
             </VerticalStackLayout>
 
             <VerticalStackLayout Spacing="16" IsVisible="{Binding IsConfirmationSent}">
-                <Label Text="{x:Static strings:AccountStrings.CheckEmailTitle}" Style="{StaticResource Headline}" />
+                <Label AutomationId="CheckEmailTitle"
+                       Text="{x:Static strings:AccountStrings.CheckEmailTitle}" Style="{StaticResource Headline}" />
                 <Label Text="{x:Static strings:AccountStrings.CheckEmailBody}" />
                 <Label Text="{x:Static strings:AccountStrings.CheckEmailHelp}" Style="{StaticResource Help}" />
                 <Button Text="{x:Static strings:AccountStrings.SignUpAgain}"
@@ -70,7 +77,8 @@
             </VerticalStackLayout>
 
             <!-- Shown with the form and the check-email message: once the email is confirmed, the member signs in. -->
-            <Button Text="{x:Static strings:AccountStrings.SignInLink}"
+            <Button AutomationId="SignInLink"
+                    Text="{x:Static strings:AccountStrings.SignInLink}"
                     Style="{StaticResource Secondary}"
                     Clicked="OnSignInClicked"
                     Margin="0,24,0,0" />

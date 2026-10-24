@@ -71,6 +71,61 @@ jobs:
             --coverage --coverage-output-format cobertura --coverage-output domain.cobertura.xml --results-directory TestResults
           python3 tests/coverage-gate.py TestResults/domain.cobertura.xml FitCore.Domain 90
 
+  android:
+    name: Android app on an emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1.7.3
+        with:
+          version: 2.121.0
+      # The emulator needs hardware acceleration, which the runner allows once /dev/kvm is open to it.
+      - run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - run: dotnet workload install maui-android
+      - run: dotnet restore FitCore.slnx
+      - run: >-
+          dotnet build src/FitCore.Maui --no-restore -t:InstallAndroidDependencies -f net10.0-android
+          -p:AndroidSdkDirectory="$ANDROID_HOME" -p:AcceptAndroidSDKLicenses=True
+      # A Debug build, which reaches the local stack at the emulator's host address (10.0.2.2), for the emulator's x86_64,
+      # with its assemblies in the APK so it runs without Visual Studio's fast deployment.
+      - run: >-
+          dotnet build src/FitCore.Maui -f net10.0-android -p:RuntimeIdentifier=android-x64
+          -p:EmbedAssembliesIntoApk=true -o artifacts/apk
+      - run: dotnet build tests/FitCore.Maui.UITests --no-restore
+      # Auth, its gateway and the mail catcher, with migrations and seed applied, as in "Build and test".
+      - run: supabase start -x realtime,storage-api,imgproxy,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - run: |
+          npm install --global appium@3.8.0
+          appium driver install uiautomator2@8.7.0
+      # Sign up, sign in, a restart and sign out through the app's screens (PR 4 acceptance).
+      - uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        env:
+          FITCORE_ANDROID_APK: artifacts/apk/app.fitcore-Signed.apk
+          FITCORE_UITEST_ARTIFACTS: ${{ github.workspace }}/TestResults/android
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: tests/FitCore.Maui.UITests/run-on-emulator.sh --no-build
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-ui-test
+          path: TestResults/android
+          if-no-files-found: ignore
+
   pgtap:
     name: Database tests (pgTAP)
     runs-on: ubuntu-latest

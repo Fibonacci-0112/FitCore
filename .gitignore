@@ -10,3 +10,4 @@ spikes/blazor-web-vitals/publish/
 
 # Test results and coverage reports
 TestResults/
+artifacts/
