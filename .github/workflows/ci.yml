@@ -37,6 +37,12 @@ jobs:
   build:
     name: Build and test
     runs-on: ubuntu-latest
+    # The shared rate-limit counters, for FitCore.Platform.Tests' Valkey store tests (ADR 0005 decision 9).
+    services:
+      valkey:
+        image: valkey/valkey:8.1
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4

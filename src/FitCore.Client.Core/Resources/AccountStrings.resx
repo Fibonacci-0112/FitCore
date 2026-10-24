@@ -165,6 +165,10 @@
   <data name="Refused" xml:space="preserve">
     <value>FitCore couldn't use those details. Check your email address and try again.</value>
   </data>
+  <data name="SignInLocked" xml:space="preserve">
+    <value>Too many wrong passwords for this email address. Wait a while and try again.</value>
+    <comment>Shown when an email address is locked out of sign-in after repeated wrong passwords (NFR-SEC-4). Says nothing about whether an account exists.</comment>
+  </data>
   <data name="RateLimited" xml:space="preserve">
     <value>Too many attempts. Wait a few minutes and try again.</value>
   </data>

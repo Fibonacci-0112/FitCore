@@ -50,7 +50,8 @@ public sealed partial class SessionTests : IClassFixture<FitCoreApp>
     [Fact]
     public async Task Sign_in_calls_Supabase_with_the_secret_key_and_the_members_IP()
     {
-        using var response = await FitCoreApp.SignInAsync(browser);
+        using var member = app.Browser(FitCoreApp.MemberIp);
+        using var response = await FitCoreApp.SignInAsync(member);
 
         var signIn = Assert.Single(app.Supabase.Requests, r => r.Path == "/auth/v1/token?grant_type=password");
         Assert.Equal(FakeSupabase.SecretKey, signIn.ApiKey);
