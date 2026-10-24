@@ -60,7 +60,10 @@ public sealed class AccountJourneyTests(AndroidApp app) : IClassFixture<AndroidA
         app.WaitFor("SignInEmail", AuthWait);
         app.WaitUntilGone("HomeSignedIn");
         Assert.Equal(0L, await SessionsAsync(email));
-        Assert.Equal("", app.WaitFor("SignInEmail").Text);
+
+        // An empty Android field reports its hint (the field's description, "Email") as its text, so check the
+        // address is gone rather than for an empty string.
+        Assert.DoesNotContain(email, app.WaitFor("SignInEmail").Text, StringComparison.Ordinal);
     }
 
     private Task<long> SessionsAsync(string email) =>
