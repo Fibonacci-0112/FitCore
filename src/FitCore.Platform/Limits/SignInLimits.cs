@@ -10,8 +10,8 @@ namespace FitCore.Platform.Limits;
 /// Auth's own per-IP limits:
 /// <list type="bullet">
 /// <item>Per address: 10 attempts a minute, with bursts up to 20, shared by sign-in and sign-up.</item>
-/// <item>Per account: 5 failed sign-ins within 15 minutes lock the email address out of sign-in for 15 minutes. Each
-/// further lockout within a day of the first doubles, up to a day. A successful sign-in clears the record.</item>
+/// <item>Per account: 5 failed sign-ins within any 15 minutes lock the email address out of sign-in for 15 minutes.
+/// Each further lockout within a day of the first doubles, up to a day. A successful sign-in clears the record.</item>
 /// </list>
 /// A lockout applies to addresses with no account too, since Supabase Auth answers both alike, so it never shows
 /// whether an account exists. Keys are hashes: neither email addresses nor IP addresses reach the store.
@@ -34,6 +34,9 @@ public sealed class SignInLimits
     /// <summary>How long after an account's first lockout further lockouts keep doubling.</summary>
     public static readonly TimeSpan LockoutMemory = TimeSpan.FromDays(1);
 
+    /// <summary>The per-account lockout, from the constants above.</summary>
+    public static readonly LockoutPolicy Lockout = new(FailuresBeforeLockout, FailureWindow, FirstLockout, LongestLockout, LockoutMemory);
+
     private static readonly TimeSpan RefillEvery = TimeSpan.FromMinutes(1) / AttemptsPerMinute;
 
     private readonly ILimitStore _store;
@@ -52,40 +55,20 @@ public sealed class SignInLimits
         _store.TakeTokenAsync("ip:" + Address(ip), Burst, RefillEvery);
 
     /// <summary>How much longer <paramref name="email"/> is locked out of sign-in; null when it isn't.</summary>
-    public Task<TimeSpan?> LockedForAsync(string email) =>
-        _store.RemainingAsync(Account(email) + ":locked");
+    public Task<TimeSpan?> LockedForAsync(string email) => _store.LockedForAsync(Account(email));
 
     /// <summary>Records a wrong email address or password, locking the address out at the fifth within the window.</summary>
     /// <returns>How long the lockout lasts, when this failure started one; otherwise null.</returns>
-    public async Task<TimeSpan?> RecordFailureAsync(string email)
-    {
-        var account = Account(email);
-        if (await _store.IncrementAsync(account + ":failures", FailureWindow) != FailuresBeforeLockout)
-        {
-            return null;
-        }
+    public Task<TimeSpan?> RecordFailureAsync(string email) => _store.RecordFailureAsync(Account(email), Lockout);
 
-        var lockouts = await _store.IncrementAsync(account + ":lockouts", LockoutMemory);
-        var duration = LockoutAfter(lockouts);
-        await _store.SetAsync(account + ":locked", duration);
-        await _store.DeleteAsync(account + ":failures");
-        return duration;
-    }
-
-    /// <summary>Clears an account's failures and lockout history once its owner has signed in.</summary>
-    public Task RecordSuccessAsync(string email)
-    {
-        var account = Account(email);
-        return _store.DeleteAsync(account + ":failures", account + ":lockouts");
-    }
+    /// <summary>
+    /// Clears an account's failures, lockout history and any lockout once its owner has signed in, including one that a
+    /// wrong password racing this sign-in started.
+    /// </summary>
+    public Task RecordSuccessAsync(string email) => _store.ClearFailuresAsync(Account(email));
 
     /// <summary>The <paramref name="lockouts"/>th lockout's length: 15 minutes, doubling, at most a day.</summary>
-    public static TimeSpan LockoutAfter(long lockouts)
-    {
-        var doublings = (int)Math.Clamp(lockouts - 1, 0, 16);
-        var duration = FirstLockout * (1L << doublings);
-        return duration < LongestLockout ? duration : LongestLockout;
-    }
+    public static TimeSpan LockoutAfter(long lockouts) => Lockout.LockoutAfter(lockouts);
 
     // Supabase Auth treats addresses case-insensitively, so the count does too.
     private static string Account(string email) =>

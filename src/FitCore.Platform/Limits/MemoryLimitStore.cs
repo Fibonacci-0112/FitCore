@@ -43,48 +43,49 @@ public sealed class MemoryLimitStore : ILimitStore
         }
     }
 
-    public Task<long> IncrementAsync(string key, TimeSpan window)
+    public Task<TimeSpan?> RecordFailureAsync(string key, LockoutPolicy policy)
     {
+        ArgumentNullException.ThrowIfNull(policy);
         lock (_gate)
         {
             var now = _time.GetUtcNow();
-            var entry = Live(key, now) is { } counter
-                ? counter with { Tokens = counter.Tokens + 1 }
-                : new Entry(1, now, now + window);
-            Put(key, entry, now);
-            return Task.FromResult((long)entry.Tokens);
-        }
-    }
-
-    public Task SetAsync(string key, TimeSpan duration)
-    {
-        lock (_gate)
-        {
-            var now = _time.GetUtcNow();
-            Put(key, new Entry(1, now, now + duration), now);
-            return Task.CompletedTask;
-        }
-    }
-
-    public Task<TimeSpan?> RemainingAsync(string key)
-    {
-        lock (_gate)
-        {
-            var now = _time.GetUtcNow();
-            return Task.FromResult(Live(key, now) is { } flag ? flag.Expires - now : (TimeSpan?)null);
-        }
-    }
-
-    public Task DeleteAsync(params string[] keys)
-    {
-        ArgumentNullException.ThrowIfNull(keys);
-        lock (_gate)
-        {
-            foreach (var key in keys)
+            var failures = (Live(key + ":failures", now)?.Times ?? [])
+                .Where(t => t > now - policy.Window)
+                .Append(now)
+                .ToArray();
+            if (failures.Length < policy.Failures)
             {
-                _entries.Remove(key);
+                Put(key + ":failures", new Entry(0, now, now + policy.Window, failures), now);
+                return Task.FromResult<TimeSpan?>(null);
             }
 
+            _entries.Remove(key + ":failures");
+            var lockouts = Live(key + ":lockouts", now) is { } counter
+                ? counter with { Tokens = counter.Tokens + 1 }
+                : new Entry(1, now, now + policy.Memory);
+            Put(key + ":lockouts", lockouts, now);
+            var duration = policy.LockoutAfter((long)lockouts.Tokens);
+            Put(key + ":locked", new Entry(1, now, now + duration), now);
+            return Task.FromResult<TimeSpan?>(duration);
+        }
+    }
+
+    public Task<TimeSpan?> LockedForAsync(string key)
+    {
+        lock (_gate)
+        {
+            var now = _time.GetUtcNow();
+            return Task.FromResult(Live(key + ":locked", now) is { } flag ? flag.Expires - now : (TimeSpan?)null);
+        }
+    }
+
+    public Task ClearFailuresAsync(string key)
+    {
+        lock (_gate)
+        {
+            _entries.Remove(key + ":failures");
+            _entries.Remove(key + ":lockouts");
+            _entries.Remove(key + ":locked");
             return Task.CompletedTask;
         }
     }
@@ -120,6 +121,9 @@ public sealed class MemoryLimitStore : ILimitStore
         _entries[key] = entry;
     }
 
-    /// <summary>A bucket's tokens, a counter's count or a flag, with when it was last updated and when it goes.</summary>
-    private sealed record Entry(double Tokens, DateTimeOffset At, DateTimeOffset Expires);
+    /// <summary>
+    /// A bucket's tokens, a counter's count, a flag or the times of recent failures, with when it was last updated and
+    /// when it goes.
+    /// </summary>
+    private sealed record Entry(double Tokens, DateTimeOffset At, DateTimeOffset Expires, DateTimeOffset[]? Times = null);
 }

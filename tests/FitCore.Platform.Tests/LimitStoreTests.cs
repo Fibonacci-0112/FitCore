@@ -60,32 +60,46 @@ public sealed class LimitStoreTests : IAsyncLifetime
 
     [Theory]
     [MemberData(nameof(Stores))]
-    public async Task A_counter_counts_and_a_flag_says_how_long_it_has_left(string kind)
+    public async Task Failures_count_within_a_rolling_window_not_one_that_starts_at_the_first(string kind)
     {
+        // Three failures within any two seconds lock the key out. Valkey keeps its own time, so its test waits.
+        var policy = new LockoutPolicy(3, TimeSpan.FromSeconds(2), TimeSpan.FromMinutes(15), TimeSpan.FromDays(1), TimeSpan.FromDays(1));
         var store = Store(kind);
 
-        Assert.Equal(1, await store.IncrementAsync("counter", TimeSpan.FromMinutes(15)));
-        Assert.Equal(2, await store.IncrementAsync("counter", TimeSpan.FromMinutes(15)));
-        Assert.Null(await store.RemainingAsync("flag"));
+        Assert.Null(await store.RecordFailureAsync("key", policy));
+        await WaitAsync(kind, TimeSpan.FromSeconds(1.5));
+        Assert.Null(await store.RecordFailureAsync("key", policy));
+        await WaitAsync(kind, TimeSpan.FromSeconds(1));
 
-        await store.SetAsync("flag", TimeSpan.FromMinutes(30));
-        var left = Assert.IsType<TimeSpan>(await store.RemainingAsync("flag"));
-        Assert.InRange(left, TimeSpan.FromMinutes(29), TimeSpan.FromMinutes(30));
-
-        await store.DeleteAsync("counter", "flag");
-        Assert.Null(await store.RemainingAsync("flag"));
-        Assert.Equal(1, await store.IncrementAsync("counter", TimeSpan.FromMinutes(15)));
+        // The first has left the window; a window fixed at the first failure would have started again with this one.
+        Assert.Null(await store.RecordFailureAsync("key", policy));
+        Assert.Equal(TimeSpan.FromMinutes(15), await store.RecordFailureAsync("key", policy));
+        Assert.InRange((await store.LockedForAsync("key")).GetValueOrDefault(), TimeSpan.FromMinutes(14), TimeSpan.FromMinutes(15));
     }
 
     [Fact]
-    public async Task A_counter_starts_again_once_its_window_has_passed()
+    public async Task A_failure_outside_the_window_is_forgotten()
     {
+        var policy = new LockoutPolicy(2, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15), TimeSpan.FromDays(1), TimeSpan.FromDays(1));
         var store = new MemoryLimitStore(_time);
-        await store.IncrementAsync("counter", TimeSpan.FromMinutes(15));
+        await store.RecordFailureAsync("key", policy);
 
         _time.Now += TimeSpan.FromMinutes(15);
 
-        Assert.Equal(1, await store.IncrementAsync("counter", TimeSpan.FromMinutes(15)));
+        Assert.Null(await store.RecordFailureAsync("key", policy));
+        Assert.NotNull(await store.RecordFailureAsync("key", policy));
+    }
+
+    [Theory]
+    [MemberData(nameof(Stores))]
+    public async Task Concurrent_failures_start_exactly_one_lockout_per_five(string kind)
+    {
+        var limits = new SignInLimits(Store(kind));
+
+        var lockouts = await Task.WhenAll(Enumerable.Range(0, 50).Select(_ => Task.Run(() => limits.RecordFailureAsync("ada@example.test"))));
+
+        Assert.Equal(10, lockouts.Count(l => l is not null));
+        Assert.Equal(SignInLimits.LockoutAfter(10), lockouts.Max());
     }
 
     [Theory]
@@ -106,6 +120,31 @@ public sealed class LimitStoreTests : IAsyncLifetime
     {
         var limits = new SignInLimits(Store(kind));
         await FailAsync(limits, 5);
+        await FailAsync(limits, 4);
+
+        await limits.RecordSuccessAsync("ada@example.test");
+
+        Assert.Equal([null, null, null, null, SignInLimits.FirstLockout], await FailAsync(limits, 5));
+    }
+
+    [Theory]
+    [MemberData(nameof(Stores))]
+    public async Task Signing_in_lifts_a_lockout_that_a_racing_wrong_password_started(string kind)
+    {
+        // The wrong password and the right one both passed the lockout check; the wrong one's answer came first.
+        var limits = new SignInLimits(Store(kind));
+        await FailAsync(limits, 5);
+
+        await limits.RecordSuccessAsync("ada@example.test");
+
+        Assert.Null(await limits.LockedForAsync("ada@example.test"));
+    }
+
+    [Theory]
+    [MemberData(nameof(Stores))]
+    public async Task A_wrong_password_answered_after_a_sign_in_counts_from_a_clean_record(string kind)
+    {
+        var limits = new SignInLimits(Store(kind));
         await FailAsync(limits, 4);
 
         await limits.RecordSuccessAsync("ada@example.test");
@@ -169,6 +208,18 @@ public sealed class LimitStoreTests : IAsyncLifetime
         }
 
         return lockouts;
+    }
+
+    private async Task WaitAsync(string kind, TimeSpan wait)
+    {
+        if (kind == "memory")
+        {
+            _time.Now += wait;
+        }
+        else
+        {
+            await Task.Delay(wait, TestContext.Current.CancellationToken);
+        }
     }
 
     // Each test gets its own Valkey keys, so runs don't share counters.

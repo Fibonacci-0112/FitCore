@@ -36,13 +36,29 @@ public sealed partial class ValkeyLimitStore : ILimitStore
         return wait
         """;
 
-    private const string IncrementScript =
+    // KEYS: failures, lockouts, locked. The failures list keeps the times of the latest few, newest first; the oldest of
+    // a full list falling inside the window means that many failed within it.
+    private const string RecordFailureScript =
         """
-        local count = redis.call('INCR', KEYS[1])
-        if count == 1 then
-          redis.call('PEXPIRE', KEYS[1], ARGV[1])
+        local failures = tonumber(ARGV[1])
+        local window_ms = tonumber(ARGV[2])
+        local clock = redis.call('TIME')
+        local now = tonumber(clock[1]) * 1000 + math.floor(tonumber(clock[2]) / 1000)
+        redis.call('LPUSH', KEYS[1], now)
+        redis.call('LTRIM', KEYS[1], 0, failures - 1)
+        redis.call('PEXPIRE', KEYS[1], window_ms)
+        local oldest = tonumber(redis.call('LINDEX', KEYS[1], failures - 1))
+        if oldest == nil or oldest <= now - window_ms then
+          return 0
         end
-        return count
+        redis.call('DEL', KEYS[1])
+        local lockouts = redis.call('INCR', KEYS[2])
+        if lockouts == 1 then
+          redis.call('PEXPIRE', KEYS[2], ARGV[5])
+        end
+        local duration = math.min(tonumber(ARGV[3]) * 2 ^ math.min(lockouts - 1, 16), tonumber(ARGV[4]))
+        redis.call('SET', KEYS[3], 1, 'PX', duration)
+        return duration
         """;
 
     private readonly IConnectionMultiplexer _valkey;
@@ -65,28 +81,36 @@ public sealed partial class ValkeyLimitStore : ILimitStore
     {
         var wait = await Try(
             async () => (long)await Database.ScriptEvaluateAsync(
-                TakeTokenScript, [Key(key)], [capacity, (long)Math.Ceiling(refillEvery.TotalMilliseconds)]),
+                TakeTokenScript, [Key(key)], [capacity, Milliseconds(refillEvery)]),
             0L);
         return wait > 0 ? TimeSpan.FromMilliseconds(wait) : null;
     }
 
-    public Task<long> IncrementAsync(string key, TimeSpan window) =>
-        Try(
-            async () => (long)await Database.ScriptEvaluateAsync(
-                IncrementScript, [Key(key)], [(long)Math.Ceiling(window.TotalMilliseconds)]),
-            0L);
-
-    public Task SetAsync(string key, TimeSpan duration) =>
-        Try(() => Database.StringSetAsync(Key(key), 1, duration), false);
-
-    public Task<TimeSpan?> RemainingAsync(string key) =>
-        Try(() => Database.KeyTimeToLiveAsync(Key(key)), null);
-
-    public Task DeleteAsync(params string[] keys)
+    public async Task<TimeSpan?> RecordFailureAsync(string key, LockoutPolicy policy)
     {
-        ArgumentNullException.ThrowIfNull(keys);
-        return Try(() => Database.KeyDeleteAsync([.. keys.Select(Key)]), 0L);
+        ArgumentNullException.ThrowIfNull(policy);
+        var duration = await Try(
+            async () => (long)await Database.ScriptEvaluateAsync(
+                RecordFailureScript,
+                [Key(key + ":failures"), Key(key + ":lockouts"), Key(key + ":locked")],
+                [
+                    policy.Failures,
+                    Milliseconds(policy.Window),
+                    Milliseconds(policy.FirstLockout),
+                    Milliseconds(policy.LongestLockout),
+                    Milliseconds(policy.Memory),
+                ]),
+            0L);
+        return duration > 0 ? TimeSpan.FromMilliseconds(duration) : null;
     }
+
+    public Task<TimeSpan?> LockedForAsync(string key) =>
+        Try(() => Database.KeyTimeToLiveAsync(Key(key + ":locked")), null);
+
+    public Task ClearFailuresAsync(string key) =>
+        Try(() => Database.KeyDeleteAsync([Key(key + ":failures"), Key(key + ":lockouts"), Key(key + ":locked")]), 0L);
+
+    private static long Milliseconds(TimeSpan span) => (long)Math.Ceiling(span.TotalMilliseconds);
 
     private RedisKey Key(string key) => _prefix + key;
 

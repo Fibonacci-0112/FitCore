@@ -15,15 +15,17 @@ public interface ILimitStore
     /// <returns>Null when a token was taken; otherwise how long until the next one.</returns>
     Task<TimeSpan?> TakeTokenAsync(string key, int capacity, TimeSpan refillEvery);
 
-    /// <summary>Adds one to the counter at <paramref name="key"/>, which disappears <paramref name="window"/> after its first count.</summary>
-    /// <returns>The count after this one.</returns>
-    Task<long> IncrementAsync(string key, TimeSpan window);
+    /// <summary>
+    /// Records a failure at <paramref name="key"/> and, when it is the policy's last within its window, locks the key
+    /// out and forgets the failures. One atomic step, so a concurrent <see cref="ClearFailuresAsync"/> lands wholly
+    /// before or after it.
+    /// </summary>
+    /// <returns>How long the lockout lasts, when this failure started one; otherwise null.</returns>
+    Task<TimeSpan?> RecordFailureAsync(string key, LockoutPolicy policy);
 
-    /// <summary>Sets a flag at <paramref name="key"/> that lasts <paramref name="duration"/>, replacing any before it.</summary>
-    Task SetAsync(string key, TimeSpan duration);
+    /// <summary>How much longer <paramref name="key"/> is locked out; null when it isn't.</summary>
+    Task<TimeSpan?> LockedForAsync(string key);
 
-    /// <summary>How much longer the flag at <paramref name="key"/> lasts; null when it isn't set.</summary>
-    Task<TimeSpan?> RemainingAsync(string key);
-
-    Task DeleteAsync(params string[] keys);
+    /// <summary>Forgets <paramref name="key"/>'s failures, lockout history and any lockout, in one atomic step.</summary>
+    Task ClearFailuresAsync(string key);
 }
