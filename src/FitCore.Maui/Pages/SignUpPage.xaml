@@ -69,6 +69,12 @@
                         Command="{Binding SignUpAgainCommand}" />
             </VerticalStackLayout>
 
+            <!-- Shown with the form and the check-email message: once the email is confirmed, the member signs in. -->
+            <Button Text="{x:Static strings:AccountStrings.SignInLink}"
+                    Style="{StaticResource Secondary}"
+                    Clicked="OnSignInClicked"
+                    Margin="0,24,0,0" />
+
         </VerticalStackLayout>
     </ScrollView>
 

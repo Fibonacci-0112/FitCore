@@ -43,6 +43,17 @@ public sealed class LocalAuth : IAsyncLifetime
         _mail.Dispose();
     }
 
+    /// <summary>Signs up a member and confirms their address, as opening the confirmation link would.</summary>
+    public async Task<string> ConfirmedMemberAsync()
+    {
+        var email = NewEmail();
+        var status = await Accounts.SignUpAsync(
+            new(email, Password, "Ada Member", new DateOnly(1990, 4, 1), "Europe/Stockholm"), TestContext.Current.CancellationToken);
+        Assert.Equal(Core.Accounts.SignUpStatus.ConfirmationSent, status);
+        await Database.ExecuteAsync("update auth.users set email_confirmed_at = now() where email = $1", email);
+        return email;
+    }
+
     /// <summary>Whether Supabase Auth emailed <paramref name="email"/>, waiting up to 10 seconds for the message.</summary>
     public async Task<bool> MailReachedAsync(string email)
     {

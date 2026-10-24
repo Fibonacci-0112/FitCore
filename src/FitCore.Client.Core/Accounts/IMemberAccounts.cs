@@ -12,6 +12,22 @@ public interface IMemberAccounts
     /// </summary>
     /// <returns>What happened. Failures from Supabase Auth or the network come back as a status, never as an exception.</returns>
     Task<SignUpStatus> SignUpAsync(SignUpRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Signs a member in with their email address and password.</summary>
+    /// <returns>The new session when <see cref="SignInStatus.SignedIn"/>. Failures come back as a status, never as an exception.</returns>
+    Task<SignInResult> SignInAsync(string email, string password, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Swaps the session's refresh token for a new session. Refresh tokens rotate, so the old one stops working once
+    /// Supabase's reuse interval has passed.
+    /// </summary>
+    Task<RefreshResult> RefreshAsync(MemberSession session, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Ends the session and revokes its refresh tokens (NFR-SEC-4). Only <see cref="SignOutStatus.SessionEnded"/> means
+    /// the session is gone; <see cref="SignOutStatus.Unavailable"/> may have left it alive.
+    /// </summary>
+    Task<SignOutStatus> SignOutAsync(MemberSession session, CancellationToken cancellationToken = default);
 }
 
 /// <summary>A new member's sign-up.</summary>
@@ -48,5 +64,53 @@ public enum SignUpStatus
     Refused,
 
     /// <summary>Supabase Auth couldn't be reached or failed. Trying again later may work.</summary>
+    Unavailable,
+}
+
+/// <summary>How a sign-in ended, with the session when it worked.</summary>
+public sealed record SignInResult(SignInStatus Status, MemberSession? Session = null);
+
+/// <summary>How a sign-in ended.</summary>
+public enum SignInStatus
+{
+    /// <summary>The member is signed in.</summary>
+    SignedIn,
+
+    /// <summary>The address and password don't match an account. Never says which of the two was wrong.</summary>
+    InvalidCredentials,
+
+    /// <summary>The account exists, but the member hasn't opened the confirmation link yet.</summary>
+    EmailNotConfirmed,
+
+    /// <summary>Too many attempts from this device or address.</summary>
+    RateLimited,
+
+    /// <summary>Supabase Auth couldn't be reached or failed. Trying again later may work.</summary>
+    Unavailable,
+}
+
+/// <summary>How a refresh ended, with the new session when it worked.</summary>
+public sealed record RefreshResult(RefreshStatus Status, MemberSession? Session = null);
+
+/// <summary>How a refresh ended.</summary>
+public enum RefreshStatus
+{
+    /// <summary>A new session replaces the old one.</summary>
+    Refreshed,
+
+    /// <summary>Supabase Auth says the session is over: signed out elsewhere, expired, or the account is gone.</summary>
+    SessionEnded,
+
+    /// <summary>Supabase Auth couldn't be reached or failed. The session may still be alive.</summary>
+    Unavailable,
+}
+
+/// <summary>How a sign-out ended.</summary>
+public enum SignOutStatus
+{
+    /// <summary>The session is gone and its refresh tokens are revoked.</summary>
+    SessionEnded,
+
+    /// <summary>Supabase Auth couldn't be reached or failed, so the session may still be alive.</summary>
     Unavailable,
 }

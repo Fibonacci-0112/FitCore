@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Email sign-in (implementation plan PR 4). The rules and messages live in SignInViewModel, shared with every platform. -->
+<ContentPage x:Class="FitCore.Maui.Pages.SignInPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:accounts="clr-namespace:FitCore.Client.Core.Accounts;assembly=FitCore.Client.Core"
+             xmlns:strings="clr-namespace:FitCore.Client.Core.Resources;assembly=FitCore.Client.Core"
+             x:DataType="accounts:SignInViewModel"
+             Title="{x:Static strings:AccountStrings.SignInHeading}"
+             Shell.NavBarIsVisible="False">
+
+    <!-- Scrolls, so nothing is clipped at 200% text size (NFR-ACC-3). -->
+    <ScrollView>
+        <VerticalStackLayout Padding="16,32" Spacing="8" MaximumWidthRequest="560">
+            <Label Text="{x:Static strings:AccountStrings.SignInHeading}" Style="{StaticResource Headline}" />
+
+            <Label Text="{x:Static strings:AccountStrings.EmailLabel}" Margin="0,16,0,0" />
+            <Entry Text="{Binding Email}"
+                   MaxLength="254"
+                   Keyboard="Email"
+                   IsSpellCheckEnabled="False"
+                   IsTextPredictionEnabled="False"
+                   SemanticProperties.Description="{x:Static strings:AccountStrings.EmailLabel}" />
+
+            <Label Text="{x:Static strings:AccountStrings.PasswordLabel}" Margin="0,8,0,0" />
+            <Entry Text="{Binding Password}"
+                   IsPassword="True"
+                   IsSpellCheckEnabled="False"
+                   IsTextPredictionEnabled="False"
+                   ReturnCommand="{Binding SignInCommand}"
+                   SemanticProperties.Description="{x:Static strings:AccountStrings.PasswordLabel}" />
+
+            <Label Text="{Binding Error}"
+                   IsVisible="{Binding HasError}"
+                   Style="{StaticResource Error}"
+                   Margin="0,8,0,0" />
+
+            <Button Text="{x:Static strings:AccountStrings.SignInButton}"
+                    Command="{Binding SignInCommand}"
+                    Margin="0,16,0,0" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}"
+                               SemanticProperties.Description="{x:Static strings:AccountStrings.SigningIn}" />
+
+            <Button Text="{x:Static strings:AccountStrings.CreateAccountLink}"
+                    Style="{StaticResource Secondary}"
+                    Clicked="OnCreateAccountClicked"
+                    Margin="0,24,0,0" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -1,6 +1,7 @@
 using System.Reflection;
 using FitCore.Client.Auth;
 using FitCore.Client.Core.Accounts;
+using FitCore.Maui.Accounts;
 using FitCore.Maui.Pages;
 
 namespace FitCore.Maui;
@@ -15,8 +16,17 @@ public static class MauiProgram
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton(new SupabaseAuthOptions(SupabaseUrl(), Setting("SupabasePublishableKey")));
         builder.Services.AddSingleton<IMemberAccounts, SupabaseMemberAccounts>();
+        builder.Services.AddSingleton(SecureStorage.Default);
+        builder.Services.AddSingleton(Preferences.Default);
+        builder.Services.AddSingleton<ISessionStore, SecureSessionStore>();
+        builder.Services.AddSingleton<DeviceSession>();
+        builder.Services.AddTransient<StartPage>();
+        builder.Services.AddTransient<SignInViewModel>();
+        builder.Services.AddTransient<SignInPage>();
         builder.Services.AddTransient<SignUpViewModel>();
         builder.Services.AddTransient<SignUpPage>();
+        builder.Services.AddTransient<HomeViewModel>();
+        builder.Services.AddTransient<HomePage>();
         builder.Services.AddSingleton<AppShell>();
 
         return builder.Build();

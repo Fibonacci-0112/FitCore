@@ -178,6 +178,12 @@ public sealed class SignUpViewModelTests
             BusyDuringCalls.Add(Observe());
             return Task.FromResult(Status);
         }
+
+        public Task<SignInResult> SignInAsync(string email, string password, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<RefreshResult> RefreshAsync(MemberSession session, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<SignOutStatus> SignOutAsync(MemberSession session, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 
     private sealed class FixedTime(DateTimeOffset now, TimeZoneInfo zone) : TimeProvider

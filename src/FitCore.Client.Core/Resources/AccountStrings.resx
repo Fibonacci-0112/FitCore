@@ -32,6 +32,14 @@
     <value>Creating your account</value>
     <comment>Screen-reader name of the busy indicator while the account is created.</comment>
   </data>
+  <data name="SigningIn" xml:space="preserve">
+    <value>Signing you in</value>
+    <comment>Screen-reader name of the busy indicator while the device app signs in.</comment>
+  </data>
+  <data name="SigningOut" xml:space="preserve">
+    <value>Signing you out</value>
+    <comment>Screen-reader name of the busy indicator while the device app signs out.</comment>
+  </data>
   <data name="SignUpTitle" xml:space="preserve">
     <value>Create your account</value>
   </data>
