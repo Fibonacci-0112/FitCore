@@ -135,25 +135,19 @@ public sealed class AndroidApp : IAsyncLifetime
     {
         WaitFor(automationId).Click();
 
-        // The dialog opens on the calendar; the year in its header opens the list of years, on this year.
-        WaitForAndroid("android:id/date_picker_header_year").Click();
+        // The dialog opens on the calendar; the year in its header opens the list of years, on this year. A tap that
+        // lands while the dialog is still opening is lost, so tap again until the list shows.
+        var years = OpenYearList();
 
-        // Earlier years are above, so scroll the list (the dialog's only scrolling view) up until the year shows.
+        // Earlier years are above, so scroll the list up until the year shows.
         var wanted = MobileBy.AndroidUIAutomator($"new UiSelector().text(\"{year}\")");
-        var list = MobileBy.AndroidUIAutomator("new UiSelector().scrollable(true)");
         for (var step = 0; step < 60; step++)
         {
-            if (Driver.FindElements(wanted) is [var item, ..])
+            if (years.FindElements(wanted) is [var item, ..])
             {
                 item.Click();
                 WaitForAndroid("android:id/button1").Click();
                 return;
-            }
-
-            if (Driver.FindElements(list) is not [var years, ..])
-            {
-                Thread.Sleep(500);
-                continue;
             }
 
             Driver.ExecuteScript("mobile: scrollGesture", new Dictionary<string, object>
@@ -166,6 +160,24 @@ public sealed class AndroidApp : IAsyncLifetime
 
         SaveScreen("year-" + year);
         throw new TimeoutException($"The date picker never showed {year}.");
+    }
+
+    private AppiumElement OpenYearList()
+    {
+        var list = MobileBy.Id("android:id/date_picker_year_picker");
+        var deadline = DateTime.UtcNow + DefaultWait;
+        while (DateTime.UtcNow < deadline)
+        {
+            WaitForAndroid("android:id/date_picker_header_year").Click();
+            Thread.Sleep(1000);
+            if (Driver.FindElements(list) is [{ Displayed: true } years, ..])
+            {
+                return years;
+            }
+        }
+
+        SaveScreen("year-list");
+        throw new TimeoutException($"The date picker's list of years didn't open within {DefaultWait.TotalSeconds} seconds.");
     }
 
     private AppiumElement WaitForAndroid(string resourceId)
